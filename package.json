@@ -1,0 +1,21 @@
+{
+    "name": "logseq-metrics",
+    "version": "0.0.1",
+    "description": "Track and visaulize your everyday data right inside of Logseq.",
+    "author": "John McCann",
+    "license": "MIT",
+    "scripts": {
+      "dev": "parcel ./index.html --public-url ./",
+      "build": "parcel build --public-url . --no-source-maps index.html"
+    },
+    "devDependencies": {
+      "@logseq/libs": "^0.0.9",
+      "parcel": "^2.0.0"
+    },
+    "dependencies": {},
+    "logseq": {
+      "id": "_xxxxxxx",
+      "main": "dist/index.html",
+      "icon": "./logo.png"
+    }
+  }
