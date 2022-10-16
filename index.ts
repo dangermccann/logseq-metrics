@@ -1,6 +1,6 @@
 
 import '@logseq/libs'
-import { PageEntity } from '@logseq/libs/dist/LSPlugin.user';
+import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 
 const DATA_PAGE = "metrics-plugin-data"
@@ -31,7 +31,7 @@ async function main () {
     })
 
     logseq.Editor.registerSlashCommand("Metrics Visualize", async () => {
-        const content = "{{renderer :metrics, Metric Name, Vizualization Name }}"
+        const content = "{{renderer :metrics, Metric Name, Child Metric Name, Vizualization Name }}"
 
         const block = await logseq.Editor.getCurrentBlock()
         if(block)
@@ -43,16 +43,19 @@ async function main () {
     })
 
     logseq.App.onMacroRendererSlotted(({ slot, payload }) => {
-        const [type, metric, visualization] = payload.arguments
+        const [type, metric, childMetric, visualization] = payload.arguments
         if(type !== ":metrics") return
 
-        logseq.provideUI({
-            key: "metrics-visualization",
-            slot,
-            template: `
-                <h2>${metric} | ${visualization}</h2>
-            `
+        const viz = new Visualization()
+        viz.render(metric, childMetric, visualization).then((html) => {
+            logseq.provideUI({
+                key: "metrics-visualization",
+                slot,
+                template: html
+            })
         })
+
+        
     })
 
     console.log("Loaded Metrics plugin")
@@ -62,31 +65,115 @@ async function main () {
 class Metric {
     date :Date
     value :string
+
+    constructor(obj :any) {
+        this.date = obj.date
+        this.value = obj.value
+    }
 }
 
 class Visualization {
     constructor() {}
 
-    loadMetrics(metric :string) :Metric[] | null {
-        // ...
-        let parts = metric.split('/')
-        
+    async render(name :string, childName :string, vizualization :string) :Promise<string> {
+        name = name.trim()
+        childName = childName.trim()
+        vizualization = vizualization.trim()
 
-        return null
+        const metrics = await this.loadMetrics(name, childName)
+        if(!metrics)
+            return `<h2>ERROR loading ${name}</h2>`
+
+        console.log(`Loaded ${metrics.length} metrics.  Rendering ${vizualization}`)
+
+        let content :string | undefined = ''
+        if(vizualization === 'sum')
+            content = this.sum(metrics).toString()
+        else if(vizualization === 'average')
+            content = this.average(metrics).toString()
+        else if(vizualization === 'latest')
+            content = this.latest(metrics)?.value
+        else
+            console.log(`Unknown visualization: ${vizualization}`)
+
+        let html = '<div class="w-48 flex flex-col bg-gray-700 text-white text-center border" style="height:11rem; border-color: #555">'
+        html += '<div class="w-full text-lg p-2 bg-gray-800">'
+
+        if(childName && childName.length > 0)
+            html += childName
+        else
+            html += name
+
+        html += `</div><div class="w-full text-4xl" style="margin: auto;"><span>${content}</span></div></div>`
+
+        return html
+    }
+
+    async findBlock(tree :BlockEntity[], name :string) :Promise<BlockIdentity | null> {
+        console.log(`findBlock ${name}, ${tree.length}`)
+        let found :string | null = null
+
+        tree.forEach(async function (value :BlockEntity) {
+            if(value.content === name) {
+                found = value.uuid
+                return
+            }
+        })
+
+        if(found)
+            return found
+        else return null
+    }
+
+    async loadMetrics(metricName :string, childName :string | null) :Promise<Metric[] | null> {
+        var block :BlockEntity | null;
+        const tree = await logseq.Editor.getPageBlocksTree(DATA_PAGE)
+        let blockId = await this.findBlock(tree, metricName)
+        
+        if(!blockId) return null
+
+        if(childName && childName.length > 0) {
+            block = await logseq.Editor.getBlock(blockId, { includeChildren: true })
+            blockId = await this.findBlock(block?.children as BlockEntity[], childName)
+        }
+
+        if(!blockId) return null
+
+        block = await logseq.Editor.getBlock(blockId, { includeChildren: true })
+
+        let metrics :Metric[] = [];
+        block?.children?.forEach( (child) => {
+            let parsed = JSON.parse((child as BlockEntity).content)
+            metrics.push(new Metric(parsed))
+        })
+
+        return metrics
     }
 
     sum(metrics :Metric[]) :number {
-        return 0
+        let sum = 0
+        metrics.forEach((metric) => {
+            const num = Number.parseFloat(metric.value)
+            if(!isNaN(num))
+                sum += num
+        })
+        return sum
     }
 
     average(metrics :Metric[]) :number {
-        return 0
+        if(metrics.length === 0) return 0
+
+        return this.sum(metrics) / metrics.length
     }
     
-    mostRecent(metrics :Metric[]) :Metric | null {
-        return null
-    }
+    latest(metrics :Metric[]) :Metric | null {
+        if(metrics.length === 0) return null
 
+        const sorted = metrics.sort((a, b) => {
+            return (new Date(b.date).getTime() - new Date(a.date).getTime())
+        })
+        return sorted[0]
+    }
 
 }
 
