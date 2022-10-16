@@ -24,8 +24,9 @@ async function main () {
 
         Object.assign(mainDiv.style, {
             top: pos.top + pos.rect.top + 'px',
-            left: pos.left + pos.rect.left + 'px',
+            left: pos.left + 'px',
         })
+        addMetricUI.clear()
         logseq.showMainUI()
     })
 
@@ -55,6 +56,37 @@ async function main () {
     })
 
     console.log("Loaded Metrics plugin")
+
+}
+
+class Metric {
+    date :Date
+    value :string
+}
+
+class Visualization {
+    constructor() {}
+
+    loadMetrics(metric :string) :Metric[] | null {
+        // ...
+        let parts = metric.split('/')
+        
+
+        return null
+    }
+
+    sum(metrics :Metric[]) :number {
+        return 0
+    }
+
+    average(metrics :Metric[]) :number {
+        return 0
+    }
+    
+    mostRecent(metrics :Metric[]) :Metric | null {
+        return null
+    }
+
 
 }
 
@@ -98,9 +130,18 @@ class AddMetricUI {
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
             }
+            else 
+                console.log("Validation failed")
             
             e.stopPropagation()
         }, false)
+    }
+
+    clear() {
+        this.metricNameInput.value = '';
+        this.childMetricInput.value = '';
+        this.dateTimeInput.value = (new Date()).toLocaleString();
+        this.valueInput.value = '';
     }
 
     validate() {
@@ -110,7 +151,7 @@ class AddMetricUI {
         
         if(!this.validateInputNotEmpty(this.dateTimeInput))
             returnVal = false
-        else if(!this.validateInputIsDate(this.valueInput))
+        else if(!this.validateInputIsDate(this.dateTimeInput))
             returnVal = false
 
         if(!this.validateInputNotEmpty(this.valueInput))
@@ -160,7 +201,9 @@ class AddMetricUI {
     }
 
     formatMetric() :string {
-        return `${this.dateTimeInput.value} ${this.valueInput.value}`
+        const date = new Date(this.dateTimeInput.value)
+        const val = { date: date, value: this.valueInput.value }
+        return JSON.stringify(val)
     }
 
     async enterMetric(name :string, childName :string, entry :string) {
