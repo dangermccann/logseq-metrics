@@ -3,7 +3,37 @@ import '@logseq/libs'
 import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 
+class Settings {
+    light: ColorSettings
+    dark: ColorSettings
+}
+
+class ColorSettings {
+    bg_color_1: string
+    bg_color_2: string
+    border_color: string
+    text_color: string
+}
+
+
 const DATA_PAGE = "metrics-plugin-data"
+let settings = new Settings()
+let themeMode = "dark"
+
+const defaultSettings :Settings = {
+    dark: {
+        bg_color_1: "bg-gray-700",
+        bg_color_2: "bg-gray-800",
+        border_color: "#555",
+        text_color: "text-white"
+    },
+    light: {
+        bg_color_1: "bg-gray-50",
+        bg_color_2: "bg-gray-100",
+        border_color: "#ddd",
+        text_color: "text-gray-900"
+    }
+}
 
 async function main () {
     const mainDiv = document.getElementById('create-metric')
@@ -13,8 +43,15 @@ async function main () {
     }
 
     // "light" or "dark"
-    const themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
+    themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
+    
+    // load settings and merge with defaults if none are present
+    settings = Object.assign({}, defaultSettings, logseq.settings)
 
+    // save settings so they can be modified later
+    logseq.updateSettings(settings)
+
+    // prepare UI for adding metrics
     let addMetricUI = new AddMetricUI();
     addMetricUI.setUpUIHandlers();
 
@@ -54,8 +91,10 @@ async function main () {
                 template: html
             })
         })
+    })
 
-        
+    logseq.App.onThemeModeChanged((mode) => {
+        themeMode = mode.mode
     })
 
     console.log("Loaded Metrics plugin")
@@ -72,6 +111,7 @@ class Metric {
     }
 }
 
+
 class Visualization {
     constructor() {}
 
@@ -79,6 +119,8 @@ class Visualization {
         name = name.trim()
         childName = childName.trim()
         vizualization = vizualization.trim()
+
+        const colors = themeMode === "dark" ? settings.dark : settings.light
 
         const metrics = await this.loadMetrics(name, childName)
         if(!metrics)
@@ -96,8 +138,10 @@ class Visualization {
         else
             console.log(`Unknown visualization: ${vizualization}`)
 
-        let html = '<div class="w-48 flex flex-col bg-gray-700 text-white text-center border" style="height:11rem; border-color: #555">'
-        html += '<div class="w-full text-lg p-2 bg-gray-800">'
+        let html = `
+            <div class="w-48 flex flex-col ${colors.bg_color_1} ${colors.text_color} text-center border" 
+                  style="height:11rem; border-color: ${colors.border_color}">
+              <div class="w-full text-lg p-2 ${colors.bg_color_2}">`
 
         if(childName && childName.length > 0)
             html += childName
