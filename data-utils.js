@@ -6,7 +6,7 @@ export class Metric {
     date
     value
 
-    constructor(obj) {
+constructor(obj) {
         this.date = obj.date
         this.value = obj.value
     }
@@ -149,11 +149,20 @@ export class DataUtils {
             })
         }
         else {
+            var parsed;
             block?.children?.forEach( (child) => {
-                child.children.forEach( (grandchild) => {
-                    let parsed = JSON.parse((grandchild).content)
+                // Child block may be an entry or it may be a label for a child metric
+                // Try to parse the content to see if it's a valid metric
+                try {
+                    parsed = JSON.parse(child.content)
+                    if(parsed.value && parsed.date)
                     metrics.push(new Metric(parsed))
-                })
+                } catch {
+                    child.children.forEach((grandchild) => {
+                        parsed = JSON.parse(grandchild.content)
+                        metrics.push(new Metric(parsed))
+                    })
+                }
             })
         }
 
