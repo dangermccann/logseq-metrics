@@ -89,7 +89,7 @@ async function main () {
 
         // TODO: figure out if we need this 'key' to be durable, as in, set to something unique that is encoded in
         // the {{renderer ...}} block.  The 'slot' value will change each time its rendered.  
-        viz.render(metric, childMetric, visualization).then((html) => {
+        viz.render(payload.uuid, metric, childMetric, visualization).then((html) => {
             logseq.provideUI({
                 key: `metrics-${slot}`,
                 slot,
@@ -126,7 +126,7 @@ function getPluginDir() {
 class Visualization {
     constructor() {}
 
-    async render(name, childName, vizualization) {
+    async render(uuid, name, childName, vizualization) {
         name = name.trim()
         childName = childName.trim()
         vizualization = vizualization.trim()
@@ -136,6 +136,7 @@ class Visualization {
 
         const colors = themeMode === "dark" ? settings.dark : settings.light
 
+        // TODO: don't load the metrics if we're going to embed an iframe 
         const metrics = await DataUtils.loadMetrics(name, childName)
         //if(!metrics)
         //    return `<h2>ERROR loading ${name}</h2>`
@@ -149,8 +150,8 @@ class Visualization {
             content = this.average(metrics).toString()
         else if(vizualization === 'latest')
             content = this.latest(metrics)?.value
-        else if(vizualization === 'line')
-            return this.line(metrics)
+        else if(vizualization === 'line' || vizualization === 'bar')
+            return this.iframe(uuid, name, childName, vizualization)
         else
             console.log(`Unknown visualization: ${vizualization}`)
 
@@ -194,8 +195,11 @@ class Visualization {
         return sorted[0]
     }
 
-    line(metrics) {
-        return `<iframe class="metrics-iframe" src="${getPluginDir()}/inline.html"></iframe>`
+    iframe(uuid, name, childName, vizualization) {
+        return `<iframe class="metrics-iframe" src="${getPluginDir()}/inline.html"
+            data-metricname="${name}" data-childname="${childName}"
+            data-frame="${logseq.baseInfo.id}_iframe" data-uuid="${uuid}"
+            data-visualization="${vizualization}"></iframe>`
     }
 }
 
