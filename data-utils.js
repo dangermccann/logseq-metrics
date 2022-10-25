@@ -13,7 +13,11 @@ constructor(obj) {
 }
 
 export class DataUtils {
-    static async findBlock(tree, name) {
+    constructor(_logseq) {
+        this.logseq = _logseq;
+    }
+
+    async findBlock(tree, name) {
         console.log(`findBlock ${name}, ${tree.length}`)
         let found = null
 
@@ -29,10 +33,10 @@ export class DataUtils {
         else return null
     }
 
-    static async enterMetric(name, childName, entry) {
-        let page = await logseq.Editor.getPage(DATA_PAGE)
+    async enterMetric(name, childName, entry) {
+        let page = await this.logseq.Editor.getPage(DATA_PAGE)
         if(!page) {
-            page = await logseq.Editor.createPage(DATA_PAGE)
+            page = await this.logseq.Editor.createPage(DATA_PAGE)
             
             if(page) {
                 console.log(`Created page ${DATA_PAGE}`)
@@ -46,17 +50,17 @@ export class DataUtils {
             console.log(`Loaded page ${DATA_PAGE}`)
         }
 
-        let tree = await logseq.Editor.getPageBlocksTree(DATA_PAGE)
+        let tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
 
         console.log(`Loaded tree with ${tree.length} blocks`)
 
         var blockId;
         if(tree.length == 0) {
             console.log(`Page is empty.  Inserting block ${name}`)
-            blockId = (await logseq.Editor.appendBlockInPage(DATA_PAGE, name))?.uuid
+            blockId = (await this.logseq.Editor.appendBlockInPage(DATA_PAGE, name))?.uuid
         }
         else {
-            blockId = await DataUtils.findOrCreateBlock(tree, name)
+            blockId = await this.findOrCreateBlock(tree, name)
             if(blockId === null) {
                 console.log("Can not locate block to insert metric")
                 return
@@ -65,9 +69,9 @@ export class DataUtils {
 
         if(childName)
         {
-            let parentBlock = await logseq.Editor.getBlock(blockId, { includeChildren: true })
+            let parentBlock = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
             if(parentBlock?.children?.length === 0) {
-                let block = await logseq.Editor.insertBlock(blockId, childName, {
+                let block = await this.logseq.Editor.insertBlock(blockId, childName, {
                     before: false, sibling: false, isPageBlock: false
                 })
                 blockId = block?.uuid
@@ -83,7 +87,7 @@ export class DataUtils {
             
         }
         
-        let metricBlock = await logseq.Editor.insertBlock(blockId, entry, {
+        let metricBlock = await this.logseq.Editor.insertBlock(blockId, entry, {
             before: false, sibling: false, isPageBlock: false
         })
         if(!metricBlock) {
@@ -94,7 +98,7 @@ export class DataUtils {
         }
     }
 
-    static async findOrCreateBlock(tree, name) {
+    async findOrCreateBlock(tree, name) {
         console.log(`findOrCreateBlock ${name}, ${tree.length}`)
         let found = null
 
@@ -112,7 +116,7 @@ export class DataUtils {
 
         console.log(`Block not found, inserting block at ${tree[tree.length - 1].uuid}`)
 
-        let block = await logseq.Editor.insertBlock(tree[tree.length - 1].uuid, name, {
+        let block = await this.logseq.Editor.insertBlock(tree[tree.length - 1].uuid, name, {
             before: false, sibling: true, isPageBlock: false
         })
         if(!block) {
@@ -125,21 +129,21 @@ export class DataUtils {
         return block?.uuid
     }
 
-    static async loadMetrics(metricName, childName) {
+    async loadMetrics(metricName, childName) {
         var block;
-        const tree = await logseq.Editor.getPageBlocksTree(DATA_PAGE)
-        let blockId = await DataUtils.findBlock(tree, metricName)
+        const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
+        let blockId = await this.findBlock(tree, metricName)
         
         if(!blockId) return []
 
         if(childName && childName.length > 0) {
-            block = await logseq.Editor.getBlock(blockId, { includeChildren: true })
-            blockId = await DataUtils.findBlock(block?.children, childName)
+            block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
+            blockId = await this.findBlock(block?.children, childName)
         }
 
         if(!blockId) return []
 
-        block = await logseq.Editor.getBlock(blockId, { includeChildren: true })
+        block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
 
         let metrics = [];
         if(childName && childName.length > 0) {
@@ -167,5 +171,35 @@ export class DataUtils {
         }
 
         return metrics
+    }
+
+    async loadChildMetrics(metricName) {
+        console.log(`loadChildMetrics ${metricName}`)
+        var metrics = { };
+    
+        const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
+    
+        console.log(`Loaded tree ${tree}`)
+    
+        let blockId = await this.findBlock(tree, metricName)
+        
+        if(!blockId) return metrics;
+    
+        var block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
+    
+        block?.children?.forEach( (child) => {
+            try {
+                // Only include child metrics
+                JSON.parse(child.content)
+            } catch {
+                metrics[child.content] = []
+                child.children.forEach((grandchild) => {
+                    const parsed = JSON.parse(grandchild.content)
+                    metrics[child.content].push(new Metric(parsed))
+                })
+            }
+        })
+    
+        return metrics;
     }
 }

@@ -16,9 +16,9 @@ class ColorSettings {
 }
 
 
-const DATA_PAGE = "metrics-plugin-data"
 let settings = new Settings()
 let themeMode = "dark"
+var dataUtils;
 
 const defaultSettings = {
     dark: {
@@ -41,6 +41,8 @@ async function main () {
         console.warn("Could not find main div")
         return;
     }
+
+    dataUtils = new DataUtils(logseq)
 
     // "light" or "dark"
     themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
@@ -89,11 +91,13 @@ async function main () {
 
         // TODO: figure out if we need this 'key' to be durable, as in, set to something unique that is encoded in
         // the {{renderer ...}} block.  The 'slot' value will change each time its rendered.  
-        viz.render(payload.uuid, metric, childMetric, visualization).then((html) => {
+        viz.render(payload.uuid, slot, metric, childMetric, visualization).then((html) => {
             logseq.provideUI({
                 key: `metrics-${slot}`,
                 slot,
-                template: html
+                template: html,
+                reset: true,
+                style: { flex: 1 }
             })
         })
     })
@@ -126,7 +130,7 @@ function getPluginDir() {
 class Visualization {
     constructor() {}
 
-    async render(uuid, name, childName, vizualization) {
+    async render(uuid, slot, name, childName, vizualization) {
         name = name.trim()
         childName = childName.trim()
         vizualization = vizualization.trim()
@@ -134,10 +138,15 @@ class Visualization {
         if(childName === '-') 
             childName = ''
 
+
+        const slotEl = parent.document.getElementById(slot)
+        if(slotEl)
+            slotEl.style.width = "100%"
+
         const colors = themeMode === "dark" ? settings.dark : settings.light
 
         // TODO: don't load the metrics if we're going to embed an iframe 
-        const metrics = await DataUtils.loadMetrics(name, childName)
+        const metrics = await dataUtils.loadMetrics(name, childName)
         //if(!metrics)
         //    return `<h2>ERROR loading ${name}</h2>`
 
@@ -238,7 +247,7 @@ class AddMetricUI {
 
         document.getElementById("create-metrics-enter-button")?.addEventListener('click', async function (e) {
             if(_this.validate()) {
-                await DataUtils.enterMetric(_this.metricNameInput.value, _this.childMetricInput.value, 
+                await dataUtils.enterMetric(_this.metricNameInput.value, _this.childMetricInput.value, 
                     _this.formatMetric())
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
