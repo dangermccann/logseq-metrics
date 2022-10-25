@@ -2,38 +2,12 @@ import '@logseq/libs'
 import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { DataUtils, Metric } from './data-utils'
-
-class Settings {
-    light
-    dark
-}
-
-class ColorSettings {
-    bg_color_1
-    bg_color_2
-    border_color
-    text_color
-}
+import { Settings, ColorSettings, defaultSettings } from './settings'
 
 
 let settings = new Settings()
 let themeMode = "dark"
 var dataUtils;
-
-const defaultSettings = {
-    dark: {
-        bg_color_1: "bg-gray-700",
-        bg_color_2: "bg-gray-800",
-        border_color: "#555",
-        text_color: "text-white"
-    },
-    light: {
-        bg_color_1: "bg-gray-50",
-        bg_color_2: "bg-gray-100",
-        border_color: "#ddd",
-        text_color: "text-gray-900"
-    }
-}
 
 async function main () {
     const mainDiv = document.getElementById('create-metric')
@@ -109,7 +83,7 @@ async function main () {
     logseq.provideStyle(`
         .metrics-iframe {
             width: 100%;
-            height: 400px;
+            height: ${settings.chart_height}px;
             margin: 0;
         }`
     )
@@ -165,9 +139,11 @@ class Visualization {
             console.log(`Unknown visualization: ${vizualization}`)
 
         let html = `
-            <div class="w-48 flex flex-col ${colors.bg_color_1} ${colors.text_color} text-center border" 
-                  style="height:11rem; border-color: ${colors.border_color}">
-              <div class="w-full text-lg p-2 ${colors.bg_color_2}">`
+            <div class="w-48 flex flex-col text-center border" 
+                  style="height:11rem; background-color: ${colors.bg_color_1};
+                  color: ${colors.text_color};
+                  border-color: ${colors.border_color};">
+              <div class="w-full text-lg p-2" style="background-color: ${colors.bg_color_2};">`
 
         if(childName && childName.length > 0)
             html += childName
