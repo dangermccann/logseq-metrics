@@ -2,7 +2,7 @@ import '@logseq/libs'
 import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { DataUtils, Metric } from './data-utils'
-import { Settings, ColorSettings, defaultSettings } from './settings'
+import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
 
 
 let settings = new Settings()
@@ -22,7 +22,8 @@ async function main () {
     themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
     
     // load settings and merge with defaults if none are present
-    settings = Object.assign({}, defaultSettings, logseq.settings)
+    settings = Object.assign({}, defaultSettings)
+    mergeDeep(settings, logseq.settings)
 
     // save settings so they can be modified later
     logseq.updateSettings(settings)
@@ -32,15 +33,11 @@ async function main () {
     addMetricUI.setUpUIHandlers();
 
     logseq.Editor.registerSlashCommand("Metrics Add", async () => {
-        const pos = await logseq.Editor.getEditingCursorPosition()
-        if(!pos) return
-
-        Object.assign(mainDiv.style, {
-            top: pos.top + pos.rect.top + 'px',
-            left: pos.left + 'px',
-        })
         addMetricUI.clear()
-        logseq.showMainUI()
+        logseq.showMainUI({ autoFocus: true })
+        setTimeout(() => {
+            addMetricUI.focus()    
+        }, 200);
     })
 
     logseq.Editor.registerSlashCommand("Metrics Visualize", async () => {
@@ -246,6 +243,10 @@ class AddMetricUI {
         this.childMetricInput.value = '';
         this.dateTimeInput.value = (new Date()).toLocaleString();
         this.valueInput.value = '';
+    }
+
+    focus() {
+        this.metricNameInput.focus()
     }
 
     validate() {
