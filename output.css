@@ -604,6 +604,10 @@ video {
   display: flex;
 }
 
+.hidden {
+  display: none;
+}
+
 .h-screen {
   height: 100vh;
 }
@@ -612,16 +616,16 @@ video {
   height: 1.5rem;
 }
 
+.w-full {
+  width: 100%;
+}
+
 .w-80 {
   width: 20rem;
 }
 
 .w-6 {
   width: 1.5rem;
-}
-
-.w-full {
-  width: 100%;
 }
 
 .transform {

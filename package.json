@@ -6,7 +6,8 @@
     "license": "MIT",
     "scripts": {
         "dev": "parcel ./index.html --public-url ./",
-        "build": "tailwindcss -i ./index.css -o ./output.css && parcel build --public-url . --no-source-maps index.html inline.html"
+        "clean": "rm -rf ./dist/*",
+        "build": "tailwindcss -i ./index.css -o ./output.css && parcel build --public-url . --no-source-maps --no-optimize index.html inline.html"
     },
     "devDependencies": {
         "@logseq/libs": "^0.0.9",

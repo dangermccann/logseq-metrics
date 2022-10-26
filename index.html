@@ -10,8 +10,8 @@
 </head>
 <body>
 
-<div id="app" class="p-3 h-screen">
-  <div id="create-metric" class="absolute p-4 w-80 mx-auto bg-slate-600 text-slate-50 rounded-lg shadow-xl"
+<div id="app" class="p-3 h-screen w-full">
+  <div id="add-metric" class="absolute p-4 w-80 mx-auto bg-slate-600 text-slate-50 rounded-lg shadow-xl"
     style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <div class="absolute top-0 right-0 pt-2 pr-2"><a id="create-metrics-close-x" aria-label="Close" type="button" class="cursor-pointer opacity-60 hover:opacity-100"><svg stroke="currentColor" viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg></a></div>
     
@@ -65,6 +65,63 @@
       </label>
     </form>
   </div>
+
+
+
+
+
+  <div id="visualize-metrics" class="hidden absolute p-4 w-80 mx-auto bg-slate-600 text-slate-50 rounded-lg shadow-xl"
+    style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="absolute top-0 right-0 pt-2 pr-2"><a id="visualize-metrics-close-x" aria-label="Close" type="button" class="cursor-pointer opacity-60 hover:opacity-100"><svg stroke="currentColor" viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg></a></div>
+    
+    <div class="mb-4">
+      <div class="text-xl font-medium text-slate-50">Visualize Metrics</div>
+    </div>
+
+    <form class="ml-0">
+      <label class="block mb-3">
+        <span class="block text-sm font-medium text-slate-200">Metric Name</span>
+        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+          focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
+          disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
+          id="visualize-metrics-name-input" required placeholder="e.g. Miles Run"
+          />
+      </label>
+      <label class="block mb-3">
+        <span class="text-sm font-medium text-slate-200">Child Metric Name</span>
+        <span class="text-sm font-light text-slate-300"> (optional)</span>
+        <input type="text" invalid class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+          focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
+          disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
+          id="visualize-metrics-child-input" placeholder="e.g. Nike Shoes"
+          />
+      </label>
+
+      <label class="block mb-3">
+        <span class="block text-sm font-medium text-slate-200">Vizualization</span>
+        <select id="visualize-metrics-select"
+          class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm 
+          focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+          <option value="latest" selected>Latest Value</option>
+          <option value="sum">Total</option>
+          <option value="average">Average</option>
+          <option value="bar">Bar Chart of Totals</option>
+          <option value="line">Time Series Line Chart</option>
+        </select>
+      </label>
+
+      <div class="mt-6 block"><hr class="opacity-20" /></div>
+
+      <label class="flex pt-3">
+        <input id="visualize-metrics-enter-button" type="button" class="cursor-pointer rounded-md bg-violet-600 py-2 px-3 font-semibold leading-5 text-white hover:bg-violet-500" value="Insert Visualization"/>
+        <input id="visualize-metrics-close-button" type="button" class="cursor-pointer rounded-md bg-gray-500 py-2 px-3 ml-3 font-semibold leading-5 text-white hover:bg-gray-400" value="Close"/>
+      </label>
+    </form>
+  </div>
+
+
+
+
 </div>
 <script src="index.js" type="module"></script>
 </body>

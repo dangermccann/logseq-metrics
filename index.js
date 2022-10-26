@@ -10,11 +10,13 @@ let themeMode = "dark"
 var dataUtils;
 
 async function main () {
-    const mainDiv = document.getElementById('create-metric')
-    if(!mainDiv) {
+    const addMetricEl = document.getElementById('add-metric')
+    if(!addMetricEl) {
         console.warn("Could not find main div")
         return;
     }
+
+    const addVisualizationEl = document.getElementById('visualize-metrics')
 
     dataUtils = new DataUtils(logseq)
 
@@ -32,23 +34,33 @@ async function main () {
     let addMetricUI = new AddMetricUI();
     addMetricUI.setUpUIHandlers();
 
+    let addVizualizationUI = new AddVizualizationUI();
+    addVizualizationUI.setUpUIHandlers();
+
     logseq.Editor.registerSlashCommand("Metrics Add", async () => {
+        addVizualizationUI.hide()
+        addMetricUI.show()
         addMetricUI.clear()
+
         logseq.showMainUI({ autoFocus: true })
         setTimeout(() => {
+            addMetricEl.style.left = "50%"
+            addMetricEl.style.top = "50%"
             addMetricUI.focus()    
         }, 200);
     })
 
     logseq.Editor.registerSlashCommand("Metrics Visualize", async () => {
-        const content = "{{renderer :metrics, Metric Name, Child Metric Name, Vizualization Name }}"
+        addMetricUI.hide()
+        addVizualizationUI.show()
+        addVizualizationUI.clear()
 
-        const block = await logseq.Editor.getCurrentBlock()
-        if(block)
-            await logseq.Editor.updateBlock(block.uuid, content)
-
-
-        //await logseq.Editor.insertAtEditingCursor(content, )
+        logseq.showMainUI({ autoFocus: true })
+        setTimeout(() => {
+            addVisualizationEl.style.left = "50%"
+            addVisualizationEl.style.top = "50%"
+            addVizualizationUI.focus()    
+        }, 200);
         
     })
 
@@ -186,12 +198,14 @@ class Visualization {
 }
 
 class AddMetricUI {
+    root;
     metricNameInput;
     childMetricInput;
     dateTimeInput;
     valueInput;
 
     constructor() {
+        this.root = document.getElementById("add-metric")
         this.metricNameInput = document.getElementById("metric-name-input");
         this.childMetricInput = document.getElementById("child-metric-input");
         this.dateTimeInput = document.getElementById("date-time-input");
@@ -305,7 +319,80 @@ class AddMetricUI {
         input.classList.add("focus:border-sky-500")
     }
 
-    
+
+    show() {
+        this.root.classList.remove("hidden")
+    }
+
+    hide() {
+        this.root.classList.add("hidden")
+    }
+}
+
+class AddVizualizationUI {
+    root;
+    metricNameInput;
+    childMetricInput;
+    vizSelect;
+
+    constructor() {
+        this.root = document.getElementById("visualize-metrics")
+        this.metricNameInput = document.getElementById("visualize-metrics-name-input");
+        this.childMetricInput = document.getElementById("visualize-metrics-child-input");
+        this.vizSelect = document.getElementById("visualize-metrics-select");
+    }
+
+
+    setUpUIHandlers() {
+        const _this = this;
+
+        document.getElementById("visualize-metrics-close-x")?.addEventListener('click', function (e) {
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            e.stopPropagation()
+        }, false)
+
+        document.getElementById("visualize-metrics-close-button")?.addEventListener('click', function (e) {
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            e.stopPropagation()
+        }, false)
+
+        document.getElementById("visualize-metrics-enter-button")?.addEventListener('click', async function (e) {
+            let childName = _this.childMetricInput.value;
+            if(childName == "")
+                childName = "-"
+
+            let viz = _this.vizSelect.options[_this.vizSelect.selectedIndex].value
+
+            // Insert renderer
+            const content = `{{renderer :metrics, ${_this.metricNameInput.value}, ${childName}, ${viz}}}`
+
+            const block = await logseq.Editor.getCurrentBlock()
+            if(block)
+                await logseq.Editor.updateBlock(block.uuid, content)
+
+            
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            
+            e.stopPropagation()
+        }, false)
+    }
+
+    clear() {
+        this.metricNameInput.value = '';
+        this.childMetricInput.value = '';
+    }
+
+    focus() {
+        this.metricNameInput.focus()
+    }
+
+    show() {
+        this.root.classList.remove("hidden")
+    }
+
+    hide() {
+        this.root.classList.add("hidden")
+    }
 }
 
 
