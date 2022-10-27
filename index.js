@@ -204,6 +204,8 @@ class AddMetricUI {
     dateInput;
     timeInput;
     valueInput;
+    autoComplete;
+    autoCompleteData;
 
     constructor() {
         this.root = document.getElementById("add-metric")
@@ -212,6 +214,17 @@ class AddMetricUI {
         this.dateInput = document.getElementById("date-input");
         this.timeInput = document.getElementById("time-input");
         this.valueInput = document.getElementById("value-input");
+        this.autoComplete = document.getElementById("metric-name-auto-complete");
+        
+        // TODO: lazy load this with real data 
+        this.autoCompleteData = [
+            { id: "1", label: "Movies Watched" },
+            { id: "2", label: "Movies Watched :: Comedy" },
+            { id: "3", label: "Movies Watched :: Drama" },
+            { id: "4", label: "Movies Watched :: Action" },
+            { id: "5", label: "Miles Run" },
+            { id: "6", label: "Exercise Minutes" }
+        ]
     }
 
     setUpUIHandlers() {
@@ -246,6 +259,44 @@ class AddMetricUI {
             
             e.stopPropagation()
         }, false)
+
+        this.autoComplete.addEventListener('click', function(e) {
+            _this.autoComplete.classList.add('hidden')
+        })
+
+        this.metricNameInput.addEventListener('blur', function(e) { 
+            _this.autoComplete.classList.add('hidden')
+        })
+
+        this.metricNameInput.addEventListener('keyup', function(e) { 
+            _this.doAutoComplete(e)
+        })
+
+        this.metricNameInput.addEventListener('change', function(e) { 
+            //_this.doAutoComplete(e)
+        })
+    }
+
+    doAutoComplete(e) {
+        if(e.target.value == '') {
+            this.autoComplete.classList.add('hidden')
+        }
+        else {
+            while (this.autoComplete.firstChild) {
+                this.autoComplete.removeChild(this.autoComplete.firstChild);
+            }
+
+            let template = document.getElementById('auto-complete-template')
+            this.autoCompleteData.forEach((item) => {
+                let el = template.cloneNode(true)
+                el.setAttribute("data-id", item.id)
+                el.textContent = item.label
+                el.classList.remove('hidden')
+                this.autoComplete.appendChild(el)
+            })
+
+            this.autoComplete.classList.remove('hidden')
+        }
     }
 
     formatMetric() {
@@ -255,6 +306,8 @@ class AddMetricUI {
     }
 
     clear() {
+        console.log("clear")
+
         this.metricNameInput.value = '';
         this.childMetricInput.value = '';
         this.valueInput.value = '';

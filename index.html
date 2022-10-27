@@ -20,13 +20,17 @@
     </div>
 
     <form class="ml-0">
-      <label class="block mb-3">
+      <label class="block mb-3 relative">
         <span class="block text-sm font-medium text-slate-200">Metric Name</span>
         <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="metric-name-input" required placeholder="e.g. Miles Run"
           />
+          <!-- Auto-complete drop-down -->
+          <div class="hidden absolute left-0 right-0 h-40 drop-shadow-2xl border-slate-300 border bg-slate-700 rounded-md overflow-y-auto"
+            id="metric-name-auto-complete">
+          </div>
       </label>
       <label class="block mb-3">
         <span class="text-sm font-medium text-slate-200">Child Metric Name</span>
@@ -124,6 +128,9 @@
 
 
 
+
+<div class="hidden text-white text-sm border-slate-500 border-b truncate p-2 hover:bg-slate-600 cursor-pointer"
+  id="auto-complete-template"></div>
 
 </div>
 <script src="index.js" type="module"></script>
