@@ -13,3 +13,7 @@ html, body {
     overflow-x: hidden;
     overflow-y: auto;
   }
+
+.dark input {
+  color-scheme: dark;
+}

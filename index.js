@@ -201,14 +201,16 @@ class AddMetricUI {
     root;
     metricNameInput;
     childMetricInput;
-    dateTimeInput;
+    dateInput;
+    timeInput;
     valueInput;
 
     constructor() {
         this.root = document.getElementById("add-metric")
         this.metricNameInput = document.getElementById("metric-name-input");
         this.childMetricInput = document.getElementById("child-metric-input");
-        this.dateTimeInput = document.getElementById("date-time-input");
+        this.dateInput = document.getElementById("date-input");
+        this.timeInput = document.getElementById("time-input");
         this.valueInput = document.getElementById("value-input");
     }
 
@@ -247,7 +249,7 @@ class AddMetricUI {
     }
 
     formatMetric() {
-        const date = new Date(this.dateTimeInput.value)
+        const date = new Date(`${this.dateInput.value} ${this.timeInput.value}`)
         const val = { date: date, value: this.valueInput.value }
         return JSON.stringify(val)
     }
@@ -255,8 +257,11 @@ class AddMetricUI {
     clear() {
         this.metricNameInput.value = '';
         this.childMetricInput.value = '';
-        this.dateTimeInput.value = (new Date()).toLocaleString();
         this.valueInput.value = '';
+
+        let now = new Date();
+        this.dateInput.value = now.toLocaleDateString('en-CA')
+        this.timeInput.value = now.toLocaleTimeString('en-GB')
     }
 
     focus() {
@@ -268,9 +273,10 @@ class AddMetricUI {
         if(!this.validateInputNotEmpty(this.metricNameInput))
             returnVal = false
         
-        if(!this.validateInputNotEmpty(this.dateTimeInput))
+        if(!this.validateInputNotEmpty(this.dateInput))
             returnVal = false
-        else if(!this.validateInputIsDate(this.dateTimeInput))
+
+        if(!this.validateInputNotEmpty(this.timeInput))
             returnVal = false
 
         if(!this.validateInputNotEmpty(this.valueInput))
@@ -281,17 +287,6 @@ class AddMetricUI {
 
     validateInputNotEmpty(input) {
         if(input.value.length == 0) {
-            this.makeInputInvalid(input)
-            return false
-        }
-        else {
-            this.makeInputValid(input)
-            return true
-        }
-    }
-
-    validateInputIsDate(input) {
-        if(isNaN(Date.parse(input.value))) {
             this.makeInputInvalid(input)
             return false
         }
