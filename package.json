@@ -7,7 +7,8 @@
     "scripts": {
         "dev": "parcel ./index.html --public-url ./",
         "clean": "rm -rf ./dist/*",
-        "build": "tailwindcss -i ./index.css -o ./output.css && parcel build --public-url . --no-source-maps --no-optimize index.html inline.html"
+        "build": "tailwindcss -i ./index.css -o ./output.css && parcel build --public-url . --no-source-maps --no-optimize index.html inline.html",
+        "prod": "tailwindcss -i ./index.css -o ./output.css && parcel build --public-url . --no-source-maps index.html inline.html"
     },
     "devDependencies": {
         "@logseq/libs": "^0.0.9",
@@ -17,7 +18,8 @@
     "dependencies": {
         "chart.js": "^3.9.1",
         "chartjs-adapter-date-fns": "^2.0.0",
-        "date-fns": "^2.29.3"
+        "date-fns": "^2.29.3",
+        "lunr": "^2.3.9"
     },
     "logseq": {
         "id": "_xxxxxxx",

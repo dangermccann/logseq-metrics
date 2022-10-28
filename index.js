@@ -3,7 +3,7 @@ import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { DataUtils, Metric } from './data-utils'
 import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
-
+import * as lunr from 'lunr'
 
 let settings = new Settings()
 let themeMode = "dark"
@@ -206,6 +206,7 @@ class AddMetricUI {
     valueInput;
     autoComplete;
     autoCompleteData;
+    idx;
 
     constructor() {
         this.root = document.getElementById("add-metric")
@@ -218,13 +219,24 @@ class AddMetricUI {
         
         // TODO: lazy load this with real data 
         this.autoCompleteData = [
-            { id: "1", label: "Movies Watched" },
-            { id: "2", label: "Movies Watched :: Comedy" },
-            { id: "3", label: "Movies Watched :: Drama" },
-            { id: "4", label: "Movies Watched :: Action" },
-            { id: "5", label: "Miles Run" },
-            { id: "6", label: "Exercise Minutes" }
+            { id: "0", label: "Movies Watched" },
+            { id: "1", label: "Movies Watched :: Comedy" },
+            { id: "2", label: "Movies Watched :: Drama" },
+            { id: "3", label: "Movies Watched :: Action" },
+            { id: "4", label: "Miles Run" },
+            { id: "5", label: "Exercise Minutes" }
         ]
+
+        var _this = this;
+        this.idx = lunr(function () {
+            this.ref('id')
+            this.field('label')
+            
+            _this.autoCompleteData.forEach(function (doc) {
+                this.add(doc)
+                console.log(`Adding ${doc.label}`)
+            }, this)
+        })
     }
 
     setUpUIHandlers() {
@@ -286,8 +298,15 @@ class AddMetricUI {
                 this.autoComplete.removeChild(this.autoComplete.firstChild);
             }
 
+            console.log(`searching ${e.target.value}`)
+            var results = this.idx.search(e.target.value + '*')
+            console.log(`${results.length} results`)
+            
             let template = document.getElementById('auto-complete-template')
-            this.autoCompleteData.forEach((item) => {
+
+            results.forEach((result) => {
+                let item = this.autoCompleteData[parseInt(result.ref)]
+
                 let el = template.cloneNode(true)
                 el.setAttribute("data-id", item.id)
                 el.textContent = item.label
