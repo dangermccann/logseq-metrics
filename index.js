@@ -204,6 +204,7 @@ class AddMetricUI {
     timeInput;
     valueInput;
     autoComplete;
+    childAutoComplete;
     autoCompleteData;
 
     constructor() {
@@ -214,6 +215,7 @@ class AddMetricUI {
         this.timeInput = document.getElementById("time-input");
         this.valueInput = document.getElementById("value-input");
         this.autoComplete = document.getElementById("metric-name-auto-complete");
+        this.childAutoComplete = document.getElementById("child-metric-auto-complete");
         
         // TODO: lazy load this with real data 
         this.autoCompleteData = [
@@ -259,44 +261,75 @@ class AddMetricUI {
             e.stopPropagation()
         }, false)
 
-        this.autoComplete.addEventListener('click', function(e) {
-            console.log(`clicked on ${e.target.textContent}`)
+        // Auto complete events
+        this.autoComplete.addEventListener('mousedown', function(e) {
+            e.stopPropagation()
 
-            // TODO: make this work with other child field somehow
+            if(!e.target.getAttribute('data-id'))
+                return;
+
             _this.metricNameInput.value = e.target.textContent
             _this.autoComplete.classList.add('hidden')
-        }, this)
+        }, true)
+
+        this.metricNameInput.addEventListener('focus', function(e) { 
+            _this.prepareAutoComplete(null)
+        })
 
         this.metricNameInput.addEventListener('blur', function(e) { 
-            setTimeout(() => { 
-                console.log(`hiding ${e.target.id}`)
-                _this.autoComplete.classList.add('hidden') 
-            }, 1000)
-            
-            e.stopPropagation()
+            _this.autoComplete.classList.add('hidden') 
         })
 
         this.metricNameInput.addEventListener('keyup', function(e) { 
-            _this.doAutoComplete(e)
+            _this.doAutoComplete(e, _this.autoComplete)
         })
 
-        this.metricNameInput.addEventListener('change', function(e) { 
-            //_this.doAutoComplete(e)
+        // Child auto complete 
+        this.childAutoComplete.addEventListener('mousedown', function(e) {
+            e.stopPropagation()
+
+            if(!e.target.getAttribute('data-id'))
+                return;
+
+            _this.childMetricInput.value = e.target.textContent
+            _this.childAutoComplete.classList.add('hidden')
+        }, true)
+
+        this.childMetricInput.addEventListener('focus', function(e) { 
+            _this.prepareAutoComplete(_this.metricNameInput.value)
+        })
+
+        this.childMetricInput.addEventListener('blur', function(e) { 
+            _this.childAutoComplete.classList.add('hidden') 
+        })
+
+        this.childMetricInput.addEventListener('keyup', function(e) { 
+            _this.doAutoComplete(e, _this.childAutoComplete)
         })
     }
 
-    doAutoComplete(e) {
+    async prepareAutoComplete(parent) {
+        this.autoCompleteData = await dataUtils.loadMetricNames(parent)
+    }
+
+    doAutoComplete(e, container) {
         if(e.target.value == '') {
-            this.autoComplete.classList.add('hidden')
+            container.classList.add('hidden')
         }
         else {
-            while (this.autoComplete.firstChild) {
-                this.autoComplete.removeChild(this.autoComplete.firstChild);
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
             }
+            var results = [];
+            try {
+                results = this.search(e.target.value, this.autoCompleteData)
+            }
+            catch(e) { }
 
-            //console.log(`searching ${e.target.value}`)
-            var results = this.search(e.target.value, this.autoCompleteData)
-            //console.log(`${results.length} results`)
+            if(results.length === 0) {
+                container.classList.add('hidden')
+                return
+            }
             
             let template = document.getElementById('auto-complete-template')
 
@@ -305,10 +338,10 @@ class AddMetricUI {
                 el.setAttribute("data-id", result.id)
                 el.textContent = result.label
                 el.classList.remove('hidden')
-                this.autoComplete.appendChild(el)
+                container.appendChild(el)
             })
 
-            this.autoComplete.classList.remove('hidden')
+            container.classList.remove('hidden')
         }
     }
 

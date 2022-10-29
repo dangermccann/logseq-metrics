@@ -202,4 +202,31 @@ export class DataUtils {
     
         return metrics;
     }
+
+    async loadMetricNames(parent) {
+        const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
+        let names = []
+
+        if(parent) {
+            let blockId = await this.findBlock(tree, parent)
+            let block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
+            block?.children?.forEach((child) => {
+                names.push({ 
+                    id: names.length,
+                    uuid: child.uuid,
+                    label: child.content
+                })
+            })
+        }
+        else {
+            tree.forEach(async function (value) {
+                names.push({ 
+                    id: names.length,
+                    uuid: value.uuid,
+                    label: value.content
+                })
+            })
+        }
+        return names
+    }
 }
