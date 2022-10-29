@@ -3,7 +3,6 @@ import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { DataUtils, Metric } from './data-utils'
 import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
-import * as lunr from 'lunr'
 
 let settings = new Settings()
 let themeMode = "dark"
@@ -206,7 +205,6 @@ class AddMetricUI {
     valueInput;
     autoComplete;
     autoCompleteData;
-    idx;
 
     constructor() {
         this.root = document.getElementById("add-metric")
@@ -226,17 +224,6 @@ class AddMetricUI {
             { id: "4", label: "Miles Run" },
             { id: "5", label: "Exercise Minutes" }
         ]
-
-        var _this = this;
-        this.idx = lunr(function () {
-            this.ref('id')
-            this.field('label')
-            
-            _this.autoCompleteData.forEach(function (doc) {
-                this.add(doc)
-                console.log(`Adding ${doc.label}`)
-            }, this)
-        })
     }
 
     setUpUIHandlers() {
@@ -273,11 +260,20 @@ class AddMetricUI {
         }, false)
 
         this.autoComplete.addEventListener('click', function(e) {
+            console.log(`clicked on ${e.target.textContent}`)
+
+            // TODO: make this work with other child field somehow
+            _this.metricNameInput.value = e.target.textContent
             _this.autoComplete.classList.add('hidden')
-        })
+        }, this)
 
         this.metricNameInput.addEventListener('blur', function(e) { 
-            _this.autoComplete.classList.add('hidden')
+            setTimeout(() => { 
+                console.log(`hiding ${e.target.id}`)
+                _this.autoComplete.classList.add('hidden') 
+            }, 1000)
+            
+            e.stopPropagation()
         })
 
         this.metricNameInput.addEventListener('keyup', function(e) { 
@@ -298,18 +294,16 @@ class AddMetricUI {
                 this.autoComplete.removeChild(this.autoComplete.firstChild);
             }
 
-            console.log(`searching ${e.target.value}`)
-            var results = this.idx.search(e.target.value + '*')
-            console.log(`${results.length} results`)
+            //console.log(`searching ${e.target.value}`)
+            var results = this.search(e.target.value, this.autoCompleteData)
+            //console.log(`${results.length} results`)
             
             let template = document.getElementById('auto-complete-template')
 
             results.forEach((result) => {
-                let item = this.autoCompleteData[parseInt(result.ref)]
-
                 let el = template.cloneNode(true)
-                el.setAttribute("data-id", item.id)
-                el.textContent = item.label
+                el.setAttribute("data-id", result.id)
+                el.textContent = result.label
                 el.classList.remove('hidden')
                 this.autoComplete.appendChild(el)
             })
@@ -325,8 +319,6 @@ class AddMetricUI {
     }
 
     clear() {
-        console.log("clear")
-
         this.metricNameInput.value = '';
         this.childMetricInput.value = '';
         this.valueInput.value = '';
@@ -393,6 +385,52 @@ class AddMetricUI {
 
     hide() {
         this.root.classList.add("hidden")
+    }
+
+
+    // TODO: move this
+    search(input, candidates) {
+        let inputTokens = input.split(' ')
+        let matches = []
+        let inputs = []
+
+        // Create reg expressions for each input token
+        inputTokens.forEach((inputToken) => {
+            inputs.push(new RegExp(inputToken, 'gi'))
+        })
+
+        // Assign a score for each candidate
+        candidates.forEach((candidate) => {
+            let candidateScore = 0
+
+            let tokens = candidate.label.split(' ')
+            tokens.forEach((token) => {
+                inputs.forEach((rex) => {
+                    if(rex.test(token))
+                        candidateScore++
+                })
+            })
+
+            if(candidateScore > 0) {
+                matches.push({ 
+                    result: candidate,
+                    score: candidateScore
+                })
+            }
+        })
+
+        // Sort matches
+        matches = matches.sort((a, b) => {
+            return b.score - a.score;
+        })
+
+        // build array to return 
+        let returns = []
+        matches.forEach((match) => {
+            returns.push(match.result)
+        })
+
+        return returns
     }
 }
 

@@ -18,8 +18,7 @@
     "dependencies": {
         "chart.js": "^3.9.1",
         "chartjs-adapter-date-fns": "^2.0.0",
-        "date-fns": "^2.29.3",
-        "lunr": "^2.3.9"
+        "date-fns": "^2.29.3"
     },
     "logseq": {
         "id": "_xxxxxxx",
