@@ -216,16 +216,8 @@ class AddMetricUI {
         this.valueInput = document.getElementById("value-input");
         this.autoComplete = document.getElementById("metric-name-auto-complete");
         this.childAutoComplete = document.getElementById("child-metric-auto-complete");
-        
-        // TODO: lazy load this with real data 
-        this.autoCompleteData = [
-            { id: "0", label: "Movies Watched" },
-            { id: "1", label: "Movies Watched :: Comedy" },
-            { id: "2", label: "Movies Watched :: Drama" },
-            { id: "3", label: "Movies Watched :: Action" },
-            { id: "4", label: "Miles Run" },
-            { id: "5", label: "Exercise Minutes" }
-        ]
+    
+        this.autoCompleteData = [ ]
     }
 
     setUpUIHandlers() {
@@ -281,7 +273,7 @@ class AddMetricUI {
         })
 
         this.metricNameInput.addEventListener('keyup', function(e) { 
-            _this.doAutoComplete(e, _this.autoComplete)
+            AutoComplete.doAutoComplete(e, _this.autoComplete, _this.autoCompleteData)
         })
 
         // Child auto complete 
@@ -304,45 +296,12 @@ class AddMetricUI {
         })
 
         this.childMetricInput.addEventListener('keyup', function(e) { 
-            _this.doAutoComplete(e, _this.childAutoComplete)
+            AutoComplete.doAutoComplete(e, _this.childAutoComplete, _this.autoCompleteData)
         })
     }
 
     async prepareAutoComplete(parent) {
         this.autoCompleteData = await dataUtils.loadMetricNames(parent)
-    }
-
-    doAutoComplete(e, container) {
-        if(e.target.value == '') {
-            container.classList.add('hidden')
-        }
-        else {
-            while (container.firstChild) {
-                container.removeChild(container.firstChild);
-            }
-            var results = [];
-            try {
-                results = this.search(e.target.value, this.autoCompleteData)
-            }
-            catch(e) { }
-
-            if(results.length === 0) {
-                container.classList.add('hidden')
-                return
-            }
-            
-            let template = document.getElementById('auto-complete-template')
-
-            results.forEach((result) => {
-                let el = template.cloneNode(true)
-                el.setAttribute("data-id", result.id)
-                el.textContent = result.label
-                el.classList.remove('hidden')
-                container.appendChild(el)
-            })
-
-            container.classList.remove('hidden')
-        }
     }
 
     formatMetric() {
@@ -420,9 +379,168 @@ class AddMetricUI {
         this.root.classList.add("hidden")
     }
 
+}
 
-    // TODO: move this
-    search(input, candidates) {
+class AddVizualizationUI {
+    root;
+    metricNameInput;
+    childMetricInput;
+    vizSelect;
+    autoComplete;
+    childAutoComplete;
+    autoCompleteData;
+
+    constructor() {
+        this.root = document.getElementById("visualize-metrics")
+        this.metricNameInput = document.getElementById("visualize-metrics-name-input");
+        this.childMetricInput = document.getElementById("visualize-metrics-child-input");
+        this.vizSelect = document.getElementById("visualize-metrics-select");
+        this.autoComplete = document.getElementById("visualize-name-auto-complete");
+        this.childAutoComplete = document.getElementById("visualize-child-auto-complete");
+
+        this.autoCompleteData = []
+    }
+
+
+    setUpUIHandlers() {
+        const _this = this;
+
+        document.getElementById("visualize-metrics-close-x")?.addEventListener('click', function (e) {
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            e.stopPropagation()
+        }, false)
+
+        document.getElementById("visualize-metrics-close-button")?.addEventListener('click', function (e) {
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            e.stopPropagation()
+        }, false)
+
+        document.getElementById("visualize-metrics-enter-button")?.addEventListener('click', async function (e) {
+            let childName = _this.childMetricInput.value;
+            if(childName == "")
+                childName = "-"
+
+            let viz = _this.vizSelect.options[_this.vizSelect.selectedIndex].value
+
+            // Insert renderer
+            const content = `{{renderer :metrics, ${_this.metricNameInput.value}, ${childName}, ${viz}}}`
+
+            const block = await logseq.Editor.getCurrentBlock()
+            if(block)
+                await logseq.Editor.updateBlock(block.uuid, content)
+
+            
+            logseq.hideMainUI({ restoreEditingCursor: true })
+            
+            e.stopPropagation()
+        }, false)
+
+
+        // Auto complete events
+        this.autoComplete.addEventListener('mousedown', function(e) {
+            e.stopPropagation()
+
+            if(!e.target.getAttribute('data-id'))
+                return;
+
+            _this.metricNameInput.value = e.target.textContent
+            _this.autoComplete.classList.add('hidden')
+        }, true)
+
+        this.metricNameInput.addEventListener('focus', function(e) { 
+            _this.prepareAutoComplete(null)
+        })
+
+        this.metricNameInput.addEventListener('blur', function(e) { 
+            _this.autoComplete.classList.add('hidden') 
+        })
+
+        this.metricNameInput.addEventListener('keyup', function(e) { 
+            AutoComplete.doAutoComplete(e, _this.autoComplete, _this.autoCompleteData)
+        })
+
+        // Child auto complete 
+        this.childAutoComplete.addEventListener('mousedown', function(e) {
+            e.stopPropagation()
+
+            if(!e.target.getAttribute('data-id'))
+                return;
+
+            _this.childMetricInput.value = e.target.textContent
+            _this.childAutoComplete.classList.add('hidden')
+        }, true)
+
+        this.childMetricInput.addEventListener('focus', function(e) { 
+            _this.prepareAutoComplete(_this.metricNameInput.value)
+        })
+
+        this.childMetricInput.addEventListener('blur', function(e) { 
+            _this.childAutoComplete.classList.add('hidden') 
+        })
+
+        this.childMetricInput.addEventListener('keyup', function(e) { 
+            AutoComplete.doAutoComplete(e, _this.childAutoComplete, _this.autoCompleteData)
+        })
+
+    }
+
+    async prepareAutoComplete(parent) {
+        this.autoCompleteData = await dataUtils.loadMetricNames(parent)
+    }
+
+    clear() {
+        this.metricNameInput.value = '';
+        this.childMetricInput.value = '';
+    }
+
+    focus() {
+        this.metricNameInput.focus()
+    }
+
+    show() {
+        this.root.classList.remove("hidden")
+    }
+
+    hide() {
+        this.root.classList.add("hidden")
+    }
+}
+
+class AutoComplete {
+    static doAutoComplete(e, container, data) {
+        if(e.target.value == '') {
+            container.classList.add('hidden')
+        }
+        else {
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            var results = [];
+            try {
+                results = AutoComplete.search(e.target.value, data)
+            }
+            catch(e) { }
+
+            if(results.length === 0) {
+                container.classList.add('hidden')
+                return
+            }
+            
+            let template = document.getElementById('auto-complete-template')
+
+            results.forEach((result) => {
+                let el = template.cloneNode(true)
+                el.setAttribute("data-id", result.id)
+                el.textContent = result.label
+                el.classList.remove('hidden')
+                container.appendChild(el)
+            })
+
+            container.classList.remove('hidden')
+        }
+    }
+
+    static search(input, candidates) {
         let inputTokens = input.split(' ')
         let matches = []
         let inputs = []
@@ -466,73 +584,6 @@ class AddMetricUI {
         return returns
     }
 }
-
-class AddVizualizationUI {
-    root;
-    metricNameInput;
-    childMetricInput;
-    vizSelect;
-
-    constructor() {
-        this.root = document.getElementById("visualize-metrics")
-        this.metricNameInput = document.getElementById("visualize-metrics-name-input");
-        this.childMetricInput = document.getElementById("visualize-metrics-child-input");
-        this.vizSelect = document.getElementById("visualize-metrics-select");
-    }
-
-
-    setUpUIHandlers() {
-        const _this = this;
-
-        document.getElementById("visualize-metrics-close-x")?.addEventListener('click', function (e) {
-            logseq.hideMainUI({ restoreEditingCursor: true })
-            e.stopPropagation()
-        }, false)
-
-        document.getElementById("visualize-metrics-close-button")?.addEventListener('click', function (e) {
-            logseq.hideMainUI({ restoreEditingCursor: true })
-            e.stopPropagation()
-        }, false)
-
-        document.getElementById("visualize-metrics-enter-button")?.addEventListener('click', async function (e) {
-            let childName = _this.childMetricInput.value;
-            if(childName == "")
-                childName = "-"
-
-            let viz = _this.vizSelect.options[_this.vizSelect.selectedIndex].value
-
-            // Insert renderer
-            const content = `{{renderer :metrics, ${_this.metricNameInput.value}, ${childName}, ${viz}}}`
-
-            const block = await logseq.Editor.getCurrentBlock()
-            if(block)
-                await logseq.Editor.updateBlock(block.uuid, content)
-
-            
-            logseq.hideMainUI({ restoreEditingCursor: true })
-            
-            e.stopPropagation()
-        }, false)
-    }
-
-    clear() {
-        this.metricNameInput.value = '';
-        this.childMetricInput.value = '';
-    }
-
-    focus() {
-        this.metricNameInput.focus()
-    }
-
-    show() {
-        this.root.classList.remove("hidden")
-    }
-
-    hide() {
-        this.root.classList.add("hidden")
-    }
-}
-
 
 // bootstrap
 logseq.ready(main).catch(console.error)
