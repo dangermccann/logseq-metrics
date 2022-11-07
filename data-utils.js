@@ -129,6 +129,52 @@ export class DataUtils {
         return block?.uuid
     }
 
+    async loadLineChart(metricName, mode) {
+        // Scenarios:
+        // 1. Single dataset using data from immediate children
+        // 2. Multiple datasets where data comes from grandchildren 
+        
+        // Modes:
+        // 1. Standard - data points plotted normally along y-axis
+        // 2. Cumulative - values are ordered chronologically and the cumulative sum is plotted  
+
+        // Return value: 
+        // datasets: [ { data: [ { x: (date), y: (float) } }, { ... } ] } ]
+        function prepareMetrics(metrics, mode) {
+            let data = [];
+            let sum = 0;
+            metrics.forEach(metric => {
+                var date, value;
+                try {
+                    let y = parseFloat(metric.value)
+                    sum += y
+                    date = new Date(metric.date)
+                    value = { x: date, y: (mode === 'cumulative') ? sum : y }
+                } catch { }
+                
+                data.push(value)
+            })
+            return data;
+        }
+
+        let datasets = []
+        let childNames = await this.loadMetricNames(metricName)
+        if(childNames.length > 0) {
+            for(var i = 0; i < childNames.length; i++) {
+                var child = childNames[i];
+                let childName = child.label;
+                let metrics = await this.loadMetrics(metricName, childName)
+                datasets.push( { data: prepareMetrics(metrics, mode), label: childName } )
+            }
+        }
+        else {
+            let metrics = await this.loadMetrics(metricName)
+            datasets.push( { data: prepareMetrics(metrics, mode) } )
+        }
+
+        return datasets;
+    }
+
     async loadMetrics(metricName, childName) {
         var block;
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
@@ -160,7 +206,7 @@ export class DataUtils {
                 try {
                     parsed = JSON.parse(child.content)
                     if(parsed.value && parsed.date)
-                    metrics.push(new Metric(parsed))
+                        metrics.push(new Metric(parsed))
                 } catch {
                     child.children.forEach((grandchild) => {
                         parsed = JSON.parse(grandchild.content)
@@ -203,6 +249,8 @@ export class DataUtils {
         return metrics;
     }
 
+    // Returns list of top-level metric names if `parent` is null.  
+    // Returns list of names of child metrics if `parent` is non null.  
     async loadMetricNames(parent) {
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
         let names = []
@@ -211,11 +259,16 @@ export class DataUtils {
             let blockId = await this.findBlock(tree, parent)
             let block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
             block?.children?.forEach((child) => {
-                names.push({ 
-                    id: names.length,
-                    uuid: child.uuid,
-                    label: child.content
-                })
+                try {
+                    JSON.parse(child.content)
+                }
+                catch {
+                    names.push({ 
+                        id: names.length,
+                        uuid: child.uuid,
+                        label: child.content
+                    })
+                }
             })
         }
         else {

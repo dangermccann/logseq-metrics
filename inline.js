@@ -1,4 +1,5 @@
 import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 import { DataUtils, Metric } from './data-utils'
 import { Settings, ColorSettings, defaultSettings } from './settings'
 
@@ -16,9 +17,96 @@ const colors = themeMode === "dark" ? settings.dark : settings.light
 
 ctx.style.backgroundColor = colors.bg_color_1;
 
+const chartOptions = {
+    maintainAspectRatio: false,
+    responsive: true,
+    layout: {
+        padding: 10
+    },
+    scales: {
+        xAxis: {
+            grid: {
+                tickColor: colors.border_color,
+                color: colors.border_color,
+                borderColor: colors.border_color,
+                drawBorder: false,
+                drawTicks: false,
+                display: false
+            },
+            ticks: {
+                color: colors.text_color,
+                padding: 10,
+                backdropPadding: 10
+            }
+        },
+        yAxis: {
+            grid: {
+                tickColor: colors.border_color,
+                color: colors.border_color,
+                borderColor: colors.border_color,
+                drawBorder: true,
+                drawTicks: false,
+                display: true
+            },
+            ticks: {
+                color: colors.text_color,
+                padding: 10,
+                backdropPadding: 10
+            }
+        }
+    },
+    plugins: {
+        title: {
+            display: true,
+            text: metricname,
+            color: colors.text_color
+        },
+        legend: {
+            display: false,
+            labels: {
+                color: colors.text_color
+            }
+        }
+    }
+};
+
 async function main () { 
     console.log("inline main()")
+    if(visualization === 'bar')
+        bar()
+    else if(visualization === 'line')
+        line('standard')
+    else if(visualization === 'cumulative-line')
+        line('cumulative')
+    else
+        console.log(`Invalid visualization: ${visualization}`)
+}
 
+async function line(mode) { 
+    let colorAry = [ colors.color_1, colors.color_2, colors.color_3, colors.color_4, colors.color_5 ]
+
+    let datasets = await dataUtils.loadLineChart(metricname, mode)
+    datasets.forEach((dataset, idx) => {
+        dataset.backgroundColor = colorAry[idx % colorAry.length];
+        dataset.borderColor = colorAry[idx % colorAry.length];
+    })
+
+    chartOptions.scales.xAxis.type = 'time';
+
+    if(datasets.length > 1)
+        chartOptions.plugins.legend.display = true
+
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: datasets
+        },
+        options: chartOptions
+    })
+}
+
+async function bar() { 
     var metrics = await dataUtils.loadChildMetrics(metricname)
     var labels = []
     var values = []
@@ -52,55 +140,7 @@ async function main () {
                 ]
             }]
         },
-        options: {
-            maintainAspectRatio: false,
-            responsive: true,
-            layout: {
-                padding: 10
-            },
-            scales: {
-                xAxis: {
-                    grid: {
-                        tickColor: colors.border_color,
-                        color: colors.border_color,
-                        borderColor: colors.border_color,
-                        drawBorder: false,
-                        drawTicks: false,
-                        display: false
-                    },
-                    ticks: {
-                        color: colors.text_color,
-                        padding: 10,
-                        backdropPadding: 10
-                    }
-                },
-                yAxis: {
-                    grid: {
-                        tickColor: colors.border_color,
-                        color: colors.border_color,
-                        borderColor: colors.border_color,
-                        drawBorder: true,
-                        drawTicks: false,
-                        display: true
-                    },
-                    ticks: {
-                        color: colors.text_color,
-                        padding: 10,
-                        backdropPadding: 10
-                    }
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: metricname,
-                    color: colors.text_color
-                },
-                legend: {
-                    display: false
-                }
-            }
-        }
+        options: chartOptions
     });
 }
 

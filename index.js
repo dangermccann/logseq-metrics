@@ -141,7 +141,7 @@ class Visualization {
             content = this.average(metrics).toString()
         else if(vizualization === 'latest')
             content = this.latest(metrics)?.value
-        else if(vizualization === 'line' || vizualization === 'bar')
+        else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar')
             return this.iframe(uuid, name, childName, vizualization)
         else
             console.log(`Unknown visualization: ${vizualization}`)
@@ -397,6 +397,9 @@ class AddVizualizationUI {
         this.vizSelect = document.getElementById("visualize-metrics-select");
         this.autoComplete = document.getElementById("visualize-name-auto-complete");
         this.childAutoComplete = document.getElementById("visualize-child-auto-complete");
+
+        this.autoComplete.classList.add('hidden') 
+        this.childAutoComplete.classList.add('hidden') 
 
         this.autoCompleteData = []
     }
