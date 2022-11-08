@@ -18,7 +18,6 @@ export class DataUtils {
     }
 
     async findBlock(tree, name) {
-        console.log(`findBlock ${name}, ${tree.length}`)
         let found = null
 
         tree.forEach(async function (value) {
@@ -164,15 +163,51 @@ export class DataUtils {
                 var child = childNames[i];
                 let childName = child.label;
                 let metrics = await this.loadMetrics(metricName, childName)
+                metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
                 datasets.push( { data: prepareMetrics(metrics, mode), label: childName } )
             }
         }
         else {
             let metrics = await this.loadMetrics(metricName)
+            metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
             datasets.push( { data: prepareMetrics(metrics, mode) } )
         }
 
         return datasets;
+    }
+
+    // Remove any metrics that have non-numeric values or invalid dates
+    filterInvalidMetrics(metrics) {
+        var filtered = []
+        metrics.forEach(metric => {
+            if(isNaN(parseFloat(metric.value)))
+                return;
+            if(isNaN(new Date(metric.date).valueOf()))
+                return;
+            filtered.push(metric)
+        })
+        return filtered;
+    }
+
+    // Chart.js requires data points to be sorted along the y-axis
+    sortMetricsByDate(metrics) {
+        var sorted = metrics.sort((a, b) => {
+            return new Date(a.date) - new Date(b.date);
+        })
+        return sorted;
+    }
+
+    parseMetric(content) {
+        let parsed = null;
+        try {
+            parsed = JSON.parse(content)
+            if(parsed.value && parsed.date)
+                return new Metric(parsed)
+
+        }
+        finally {
+            return parsed;
+        }
     }
 
     async loadMetrics(metricName, childName) {
@@ -192,25 +227,27 @@ export class DataUtils {
         block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
 
         let metrics = [];
+        var metric;
         if(childName && childName.length > 0) {
             block?.children?.forEach( (child) => {
-                let parsed = JSON.parse((child).content)
-                metrics.push(new Metric(parsed))
+                metric = this.parseMetric(child.content)
+                if(metric)
+                    metrics.push(metric)
             })
         }
         else {
-            var parsed;
             block?.children?.forEach( (child) => {
                 // Child block may be an entry or it may be a label for a child metric
                 // Try to parse the content to see if it's a valid metric
-                try {
-                    parsed = JSON.parse(child.content)
-                    if(parsed.value && parsed.date)
-                        metrics.push(new Metric(parsed))
-                } catch {
-                    child.children.forEach((grandchild) => {
-                        parsed = JSON.parse(grandchild.content)
-                        metrics.push(new Metric(parsed))
+                metric = this.parseMetric(child.content)
+                if(metric) {
+                    metrics.push(metric)
+                }
+                else {
+                    child.children.forEach((grandchild) => { 
+                        metric = this.parseMetric(grandchild.content)
+                        if(metric)
+                            metrics.push(metric)
                     })
                 }
             })
@@ -234,14 +271,16 @@ export class DataUtils {
         var block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
     
         block?.children?.forEach( (child) => {
-            try {
+            let parsed = this.parseMetric(child.content);
+            if(parsed) { 
                 // Only include child metrics
-                JSON.parse(child.content)
-            } catch {
+            }
+            else if(child.content.length > 0) {
                 metrics[child.content] = []
                 child.children.forEach((grandchild) => {
-                    const parsed = JSON.parse(grandchild.content)
-                    metrics[child.content].push(new Metric(parsed))
+                    parsed = this.parseMetric(grandchild.content)
+                    if(parsed)
+                        metrics[child.content].push(parsed)
                 })
             }
         })

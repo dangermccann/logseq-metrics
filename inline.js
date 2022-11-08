@@ -20,6 +20,7 @@ ctx.style.backgroundColor = colors.bg_color_1;
 const chartOptions = {
     maintainAspectRatio: false,
     responsive: true,
+    animation: false,
     layout: {
         padding: 10
     },
