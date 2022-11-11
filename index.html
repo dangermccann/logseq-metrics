@@ -8,60 +8,60 @@
   <link rel="stylesheet" href="./output.css">
   <title>Logseq Metrics Plugin</title>
 </head>
-<body class="dark">
+<body>
 
 <div id="app" class="p-3 h-screen w-full">
-  <div id="add-metric" class="absolute p-4 w-80 mx-auto bg-slate-600 text-slate-50 rounded-lg shadow-xl"
+  <div id="add-metric" class="absolute p-4 w-80 mx-auto bg-slate-100 dark:bg-slate-600 text-slate-800 dark:text-slate-50 rounded-lg shadow-xl"
     style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <div class="absolute top-0 right-0 pt-2 pr-2"><a id="create-metrics-close-x" aria-label="Close" type="button" class="cursor-pointer opacity-60 hover:opacity-100"><svg stroke="currentColor" viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg></a></div>
     
     <div class="mb-4">
-      <div class="text-xl font-medium text-slate-50">Add Metric</div>
+      <div class="text-xl font-medium text-slate-800 dark:text-slate-50">Add Metric</div>
     </div>
 
     <form class="ml-0">
       <label class="block mb-3 relative">
-        <span class="block text-sm font-medium text-slate-200">Metric Name</span>
-        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Metric Name</span>
+        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="metric-name-input" required placeholder="e.g. Miles Run"
           />
           <!-- Auto-complete drop-down -->
-          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-300 border bg-slate-700 rounded-md overflow-y-auto"
+          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-200 dark:border-slate-300 border bg-white dark:bg-slate-700 rounded-md overflow-y-auto"
             id="metric-name-auto-complete">
           </div>
       </label>
       <label class="block mb-3 relative">
-        <span class="text-sm font-medium text-slate-200">Child Metric Name</span>
-        <span class="text-sm font-light text-slate-300"> (optional)</span>
-        <input type="text" invalid class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Child Metric Name</span>
+        <span class="text-sm font-light text-slate-600 dark:text-slate-300"> (optional)</span>
+        <input type="text" invalid class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="child-metric-input" placeholder="e.g. Nike Shoes"
           />
 
           <!-- Auto-complete drop-down -->
-          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-300 border bg-slate-700 rounded-md overflow-y-auto"
+          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-200 dark:border-slate-300 border bg-white dark:bg-slate-700 rounded-md overflow-y-auto"
             id="child-metric-auto-complete">
           </div>
       </label>
 
       <label class="block mb-3">
-        <span class="block text-sm font-medium text-slate-200">Date and Time</span>
+        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Date and Time</span>
         <div class="flex">
-          <input type="date" class="flex-1 mt-1 mr-1 px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+          <input type="date" class="flex-1 mt-1 mr-1 px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
             focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
             value="1978-05-22" id="date-input">
-          <input type="time" class="flex-1 mt-1 px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+          <input type="time" class="flex-1 mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
             focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
             value="08:35" id="time-input">
         </div>
       </label>
 
       <label class="block mb-3">
-        <span class="block text-sm font-medium text-slate-200">Value</span>
-        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Value</span>
+        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="value-input" required placeholder="e.g. 10"
@@ -82,47 +82,47 @@
 
 
 
-  <div id="visualize-metrics" class="hidden absolute p-4 w-80 mx-auto bg-slate-600 text-slate-50 rounded-lg shadow-xl"
+  <div id="visualize-metrics" class="hidden absolute p-4 w-80 mx-auto bg-slate-100 dark:bg-slate-600 text-slate-800 dark:text-slate-50 rounded-lg shadow-xl"
     style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <div class="absolute top-0 right-0 pt-2 pr-2"><a id="visualize-metrics-close-x" aria-label="Close" type="button" class="cursor-pointer opacity-60 hover:opacity-100"><svg stroke="currentColor" viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg></a></div>
     
     <div class="mb-4">
-      <div class="text-xl font-medium text-slate-50">Visualize Metrics</div>
+      <div class="text-xl font-medium text-slate-800 dark:text-slate-50">Visualize Metrics</div>
     </div>
 
     <form class="ml-0">
       <label class="block mb-3 relative">
-        <span class="block text-sm font-medium text-slate-200">Metric Name</span>
-        <input type="text" class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Metric Name</span>
+        <input type="text" class="mt-1 block w-full px-3 py-2  bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="visualize-metrics-name-input" required placeholder="e.g. Miles Run"
           />
 
           <!-- Auto-complete drop-down -->
-          <div class="absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-300 border bg-slate-700 rounded-md overflow-y-auto"
+          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-200 dark:border-slate-300 border bg-white dark:bg-slate-700 rounded-md overflow-y-auto"
             id="visualize-name-auto-complete">
           </div>
       </label>
       <label class="block mb-3 relative">
-        <span class="text-sm font-medium text-slate-200">Child Metric Name</span>
-        <span class="text-sm font-light text-slate-300"> (optional)</span>
-        <input type="text" invalid class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Child Metric Name</span>
+        <span class="text-sm font-light text-slate-600 dark:text-slate-300"> (optional)</span>
+        <input type="text" invalid class="mt-1 block w-full px-3 py-2  bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500
           disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
           id="visualize-metrics-child-input" placeholder="e.g. Nike Shoes"
           />
 
           <!-- Auto-complete drop-down -->
-          <div class="absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-300 border bg-slate-700 rounded-md overflow-y-auto"
+          <div class="hidden absolute z-10 left-0 right-0 h-40 drop-shadow-2xl border-slate-200 dark:border-slate-300 border bg-white dark:bg-slate-700 rounded-md overflow-y-auto"
             id="visualize-child-auto-complete">
           </div>
       </label>
 
       <label class="block mb-3">
-        <span class="block text-sm font-medium text-slate-200">Vizualization</span>
+        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Vizualization</span>
         <select id="visualize-metrics-select"
-          class="mt-1 block w-full px-3 py-2 bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm 
+          class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm 
           focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
           <option value="latest" selected>Latest Value</option>
           <option value="sum">Total</option>
@@ -145,7 +145,8 @@
 
 
 
-<div class="hidden text-white text-sm border-slate-500 border-b truncate p-2 hover:bg-slate-600 cursor-pointer"
+<div class="hidden text-slate-700 dark:text-white text-sm border-slate-300 dark:border-slate-500 border-b truncate p-2 
+            hover:text-white hover:bg-slate-600 cursor-pointer"
   id="auto-complete-template"></div>
 
 </div>

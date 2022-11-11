@@ -22,6 +22,9 @@ async function main () {
     // "light" or "dark"
     themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
     
+    if(themeMode === 'dark')
+        document.body.classList.add("dark")
+    
     // load settings and merge with defaults if none are present
     settings = Object.assign({}, defaultSettings)
     mergeDeep(settings, logseq.settings)
@@ -85,7 +88,11 @@ async function main () {
     })
 
     logseq.App.onThemeModeChanged((mode) => {
-        themeMode = mode.mode
+        themeMode = mode.mode;
+        if(themeMode === 'dark')
+            document.body.classList.add("dark")
+        else 
+            document.body.classList.remove("dark")
     })
 
     logseq.provideStyle(`
