@@ -25,8 +25,8 @@ jobs:
           npm install -g yarn
           yarn
           yarn prod
-          mkdir ${{ env.PLUGIN_NAME }}/dist
-          mv dist ${{ env.PLUGIN_NAME }}/dist
+          mkdir -p ${{ env.PLUGIN_NAME }}/dist
+          mv dist/* ${{ env.PLUGIN_NAME }}/dist
           mv package.json logo.png LICENSE ${{ env.PLUGIN_NAME }}
           ls -lR ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
