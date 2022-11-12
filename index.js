@@ -1,6 +1,4 @@
 import '@logseq/libs'
-import { BlockIdentity, PageEntity } from '@logseq/libs/dist/LSPlugin.user';
-import { BlockEntity } from '@logseq/libs/dist/LSPlugin.user';
 import { DataUtils, Metric } from './data-utils'
 import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
 
