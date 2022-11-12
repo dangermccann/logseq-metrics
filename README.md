@@ -1,0 +1,2 @@
+# Logseq Metrics Plugin
+TODO
