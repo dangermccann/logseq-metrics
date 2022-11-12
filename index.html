@@ -120,17 +120,24 @@
       </label>
 
       <label class="block mb-3">
-        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200">Vizualization</span>
-        <select id="visualize-metrics-select"
-          class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm 
-          focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-          <option value="latest" selected>Latest Value</option>
-          <option value="sum">Total</option>
-          <option value="average">Average</option>
-          <option value="bar">Bar Chart of Totals</option>
-          <option value="line">Time Series Line Chart</option>
-          <option value="cumulative-line">Cumulative Time Series Line Chart</option>
-        </select>
+        <div class="flex">
+          <div class="flex-none text-sm font-medium text-slate-700 dark:text-slate-200">Vizualization</div>
+          <a href="#" id="help-link" 
+            class="flex-none block ml-1.5 bg-violet-600 text-white font-semibold rounded-3xl w-5 text-center"
+            style="line-height: 1.1em">?</a>
+        </div>
+        <div>
+          <select id="visualize-metrics-select"
+            class="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-500 border border-slate-300 rounded-md text-sm shadow-sm 
+            focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+            <option value="latest" selected>Card: Latest Value</option>
+            <option value="sum">Card: Total Value</option>
+            <option value="average">Card: Average</option>
+            <option value="bar">Bar Chart: Totals</option>
+            <option value="line">Line Chart: Time Series</option>
+            <option value="cumulative-line">Line Chart: Cumulative Time Series</option>
+          </select>
+        </div>
       </label>
 
       <div class="mt-6 block"><hr class="opacity-20" /></div>

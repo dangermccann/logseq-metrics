@@ -443,6 +443,11 @@ class AddVizualizationUI {
             e.stopPropagation()
         }, false)
 
+        document.getElementById("help-link")?.addEventListener('click', async function(e) {
+            console.log("opening link")
+            await logseq.App.openExternalLink('https://github.com/dangermccann/logseq-metrics#visualization-types')
+            return false;
+        })
 
         // Auto complete events
         this.autoComplete.addEventListener('mousedown', function(e) {

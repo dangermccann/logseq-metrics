@@ -19,8 +19,8 @@ You embed a visualization in your graph using the **Metrics Visualize** slash co
 
 ### Card
 A card displays a single value calcualted from the Data Points for a single Metric or Child Metric.  The following cards are supported:
-- Latest – Displays the most recent Data Point
-- Total – Dispalys the sum of all Data Points 
+- Latest Value – Displays the most recent Data Point
+- Total Value – Dispalys the sum of all Data Points 
 - Average – Displays the average value of all Data Points
 
 
@@ -28,7 +28,7 @@ A card displays a single value calcualted from the Data Points for a single Metr
 The bar chart is for comparing the total values of Child Metrics.  For example, a bar chart could be used to compare the number of exercise minutes of each type: running, cycling, cardio and stregnth training.  
 
 ### Line Chart
-A line chart displays how a metric changes over time.  It comes in two forms: standard and cumulative.  The line chart can display multiple Child Metrics as different series on a single chart.  
+A line chart displays how a metric changes over time.  It comes in two forms: standard time series and cumulative time series.  The line chart can display multiple Child Metrics as different series on a single chart.  
 
 ## Configuration 
 
