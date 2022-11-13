@@ -23,12 +23,17 @@ A card displays a single value calcualted from the Data Points for a single Metr
 - Total Value – Dispalys the sum of all Data Points 
 - Average – Displays the average value of all Data Points
 
+![Card](./images/card.png)
 
 ### Bar Chart 
 The bar chart is for comparing the total values of Child Metrics.  For example, a bar chart could be used to compare the number of exercise minutes of each type: running, cycling, cardio and stregnth training.  
 
+![Bar Chart](./images/bar-chart.png)
+
 ### Line Chart
 A line chart displays how a metric changes over time.  It comes in two forms: standard time series and cumulative time series.  The line chart can display multiple Child Metrics as different series on a single chart.  
+
+![Line Chart](./images/line-chart.png)
 
 ## Configuration 
 
@@ -66,8 +71,8 @@ Data points are stored as JSON objects with two attributes:
 ## Feedback 
 I'd love to hear what you think of this plugin or if you have any suggestions for how to make it better!  Please [submit an issue](https://github.com/dangermccann/logseq-metrics/issues/new) on my Github to let share your feedback or to report bugs. 
 
- 
+
+<a href="https://www.buymeacoffee.com/dangermccaC" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a> 
 
 
 > *“Measure what is measurable, and make measurable what is not so”* — Galileo Galilei 
-

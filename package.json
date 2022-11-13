@@ -21,8 +21,14 @@
         "date-fns": "^2.29.3"
     },
     "logseq": {
-        "id": "_xxxxxxx",
+        "id": "_logseq-metrics",
         "main": "dist/index.html",
         "icon": "./logo.png"
-    }
+    },
+    "repo": "dangermccann/logseq-metrics",
+    "title": "Metrics",
+    "effect": false,
+    "sponsors": [
+      "https://www.buymeacoffee.com/dangermccaC"
+    ]
 }
