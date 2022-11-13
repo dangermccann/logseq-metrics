@@ -93,6 +93,14 @@ async function line(mode) {
     })
 
     chartOptions.scales.xAxis.type = 'time';
+    chartOptions.scales.xAxis.time = {
+        unit: 'day'
+    }
+    chartOptions.elements = {
+        line: {
+            tension: 0.1
+        }
+    }
 
     if(datasets.length > 1)
         chartOptions.plugins.legend.display = true

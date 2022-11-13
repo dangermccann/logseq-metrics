@@ -1,7 +1,7 @@
 {
     "name": "logseq-metrics",
-    "version": "0.0.1",
-    "description": "Track and visaulize your everyday data right inside of Logseq.",
+    "version": "0.8",
+    "description": "Track and visaulize your personal habits, goals and business results in Logseq.",
     "author": "John McCann",
     "license": "MIT",
     "scripts": {

@@ -143,7 +143,7 @@ class Visualization {
         if(vizualization === 'sum')
             content = this.sum(metrics).toString()
         else if(vizualization === 'average')
-            content = this.average(metrics).toString()
+            content = this.average(metrics).toFixed(2).toString()
         else if(vizualization === 'latest')
             content = this.latest(metrics)?.value
         else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar')
@@ -158,6 +158,11 @@ class Visualization {
                   border-color: ${colors.border_color};">
               <div class="w-full text-lg p-2" style="background-color: ${colors.bg_color_2};">`
 
+        if(vizualization === 'sum')
+            html += "Total "
+        else if(vizualization === 'average')
+            html += "Average "
+            
         if(childName && childName.length > 0)
             html += childName
         else
