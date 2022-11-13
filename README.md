@@ -1,7 +1,7 @@
 # Logseq Metrics Plugin
 A Logseq plugin for tracking and mesuring personal habits, goals, business results and just about anything else that can be counted and displayed on a chart.  
 
-> (Insert demo here...)
+![Demo](./images/demo.gif)
 
 The plugin provides an interface for storing Metrics and Data Points inside your Logseq graph.  A Metric can be anything that you can measure: exercise minutes, hours of study time, calories consumed, blood pressure readings, outdoor temperature, etc.  A Data Point is a single measurement taken at a specific date and time.  
 
