@@ -35,7 +35,7 @@ export class DataUtils {
     async enterMetric(name, childName, entry) {
         let page = await this.logseq.Editor.getPage(DATA_PAGE)
         if(!page) {
-            page = await this.logseq.Editor.createPage(DATA_PAGE)
+            page = await this.logseq.Editor.createPage(DATA_PAGE, {}, { redirect: false })
             
             if(page) {
                 console.log(`Created page ${DATA_PAGE}`)
@@ -94,6 +94,12 @@ export class DataUtils {
         }
         else {
             console.log(`Metric inserted successfully: ${entry}`)
+            
+            let formattedName = name;
+            if(childName)
+                formattedName += " :: " + childName
+            
+            logseq.UI.showMsg(`Inserted data point for metric ${formattedName}.`)
         }
     }
 
@@ -302,21 +308,25 @@ export class DataUtils {
                     JSON.parse(child.content)
                 }
                 catch {
-                    names.push({ 
-                        id: names.length,
-                        uuid: child.uuid,
-                        label: child.content
-                    })
+                    if(child.content.indexOf("{{renderer") === -1) {
+                        names.push({ 
+                            id: names.length,
+                            uuid: child.uuid,
+                            label: child.content
+                        })
+                    }
                 }
             })
         }
         else {
             tree.forEach(async function (value) {
-                names.push({ 
-                    id: names.length,
-                    uuid: value.uuid,
-                    label: value.content
-                })
+                if(value.content.indexOf("{{renderer") === -1) {
+                    names.push({ 
+                        id: names.length,
+                        uuid: value.uuid,
+                        label: value.content
+                    })
+                }
             })
         }
         return names
