@@ -5,6 +5,7 @@ import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
 let settings = new Settings()
 let themeMode = "dark"
 var dataUtils;
+var hooks = []
 
 async function main () {
     const addMetricEl = document.getElementById('add-metric')
@@ -83,6 +84,9 @@ async function main () {
                 style: { flex: 1 }
             })
         })
+
+        if(!hooks.includes(payload.uuid))
+            hooks.push({ metric: metric, uuid: payload.uuid })
     })
 
     logseq.App.onThemeModeChanged((mode) => {
@@ -91,6 +95,10 @@ async function main () {
             document.body.classList.add("dark")
         else 
             document.body.classList.remove("dark")
+    })
+
+    logseq.App.onRouteChanged((path, template) => {
+        hooks = []
     })
 
     logseq.provideStyle(`
@@ -256,6 +264,16 @@ class AddMetricUI {
                     _this.formatMetric())
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
+
+                hooks.forEach(async (hook) => {
+                    if(hook.metric === _this.metricNameInput.value) {
+                        let block = await logseq.Editor.getBlock(hook.uuid)
+                        await logseq.Editor.updateBlock(hook.uuid, "")
+                        await logseq.Editor.updateBlock(hook.uuid, block.content)
+                        console.log(`Refreshed block ${hook.uuid}`)
+                    }
+                })
+                
             }
             else 
                 console.log("Validation failed")

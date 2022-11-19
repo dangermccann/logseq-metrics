@@ -108,7 +108,6 @@ export class DataUtils {
         let found = null
 
         tree.forEach(async function (value) {
-            console.log(`Iteration block ${value}`)
             if(value.content === name) {
                 console.log(`Iteration name match ${value.content} , ${value.children}`)
                 found = value.uuid
