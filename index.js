@@ -65,6 +65,20 @@ async function main () {
         
     })
 
+    logseq.Editor.registerSlashCommand("Metrics Properties Chart", async () => { 
+        const content = `{{renderer :metrics, YOUR PROPERTY NAME HERE, -, properties-line}}`
+
+        const block = await logseq.Editor.getCurrentBlock()
+        if(block) {
+            await logseq.Editor.updateBlock(block.uuid, content)
+            await logseq.Editor.exitEditingMode()
+            setTimeout(() => {
+                logseq.Editor.editBlock(block.uuid, { pos: 21 })
+            }, 50)
+            
+        }
+    })
+
     logseq.App.onMacroRendererSlotted(({ slot, payload }) => {
         const [type, metric, childMetric, visualization] = payload.arguments
         if(type !== ":metrics") return
@@ -154,7 +168,8 @@ class Visualization {
             content = this.average(metrics).toFixed(2).toString()
         else if(vizualization === 'latest')
             content = this.latest(metrics)?.value
-        else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar')
+        else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar'
+            ||  vizualization === 'properties-line' || visualization === 'properties-cumulative-line')
             return this.iframe(uuid, name, childName, vizualization)
         else
             console.log(`Unknown visualization: ${vizualization}`)

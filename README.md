@@ -9,9 +9,10 @@ The plugin also supports Child Metrics to allow logically similar Metrics to be 
 
 ## Usage 
 
-The plugin uses two slash commands: 
+The plugin uses three slash commands: 
 - **Metrics Add** – Displays an interface to store a single Data Point for a Metric (and optionally a Child Metric) that you specify.  
-- **Metrics Visualize** – Displays an interface to insert a Card, Bar Chart or Line Chart visualization into the current block on the current page.  
+- **Metrics Visualize** – Displays an interface to insert a [Card](#card), [Bar Chart](#bar-chart) or [Line Chart](#line-chart) visualization into the current block on the current page.  
+- **Metrics Properties Chart** – Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
 
 ## Visualization Types
 
@@ -67,6 +68,14 @@ Data for the metrics and data points is stored in the `metrics-plugin-data` page
 Data points are stored as JSON objects with two attributes:
 - `date` – The date and time associated with the data point.  
 - `value` – The value of the data point.  It can be an integer, float or string.  If storing non-numeric data as a string, the only visualization that will work is the Latest Card (for example, you can use this to display a Card showing the name of the last book you read. 
+
+## Properties Charts
+A Properties Chart visualizes how [Logseq properties](https://discuss.logseq.com/t/lesson-5-how-to-power-your-workflows-using-properties-and-dynamic-variables/10173#what-are-logseq-properties-1) in your journal change over time.  To use this chart type first enter some numberic properties on your journal pages.  In the example below, there are entries for the `weight::` property on three journal pages.  
+
+![PropertiesChart](./images/properties-chart.png)
+
+Then use the **Metrics Properties Chart** slash command and enter the property name (`weight`) into the first argument of the renderer:
+`{{renderer :metrics, weight, -, properties-line}}`
 
 ## Feedback 
 I'd love to hear what you think of this plugin or if you have any suggestions for how to make it better!  Please [submit an issue](https://github.com/dangermccann/logseq-metrics/issues/new) on my Github to let share your feedback or to report bugs. 

@@ -133,6 +133,25 @@ export class DataUtils {
         return block?.uuid
     }
 
+    prepareMetricsForLineChart(metrics, mode) {
+        let data = [];
+        let sum = 0;
+        metrics.forEach(metric => {
+            var date, value;
+            try {
+                let y = parseFloat(metric.value)
+                sum += y
+                date = new Date(metric.date)
+                value = { x: date, y: (mode === 'cumulative') ? sum : y }
+            } catch { 
+                console.log(`Invalid meric.  date: ${metric.date}, value: ${metric.value}`)
+            }
+            
+            data.push(value)
+        })
+        return data;
+    }
+
     async loadLineChart(metricName, mode) {
         // Scenarios:
         // 1. Single dataset using data from immediate children
@@ -144,22 +163,6 @@ export class DataUtils {
 
         // Return value: 
         // datasets: [ { data: [ { x: (date), y: (float) } }, { ... } ] } ]
-        function prepareMetrics(metrics, mode) {
-            let data = [];
-            let sum = 0;
-            metrics.forEach(metric => {
-                var date, value;
-                try {
-                    let y = parseFloat(metric.value)
-                    sum += y
-                    date = new Date(metric.date)
-                    value = { x: date, y: (mode === 'cumulative') ? sum : y }
-                } catch { }
-                
-                data.push(value)
-            })
-            return data;
-        }
 
         let datasets = []
         let childNames = await this.loadMetricNames(metricName)
@@ -169,13 +172,13 @@ export class DataUtils {
                 let childName = child.label;
                 let metrics = await this.loadMetrics(metricName, childName)
                 metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
-                datasets.push( { data: prepareMetrics(metrics, mode), label: childName } )
+                datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode), label: childName } )
             }
         }
         else {
             let metrics = await this.loadMetrics(metricName)
             metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
-            datasets.push( { data: prepareMetrics(metrics, mode) } )
+            datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode) } )
         }
 
         return datasets;
@@ -329,5 +332,37 @@ export class DataUtils {
             })
         }
         return names
+    }
+
+    async propertiesQueryLineChart(prop, mode) {
+        let results = await this.logseq.DB.datascriptQuery(`
+        [:find (pull ?b [*])
+          :where
+          [?b :block/page ?p]
+          [?p :block/journal? true]
+          [?b :block/properties ?prop]
+          [(get ?prop :${prop})]
+        ]`)        
+
+        if(!results) return [ { data: [] } ]
+
+        let metrics = []
+
+        for(var i = 0; i < results.length; i++) {
+            let result = results[i];
+            let value = parseFloat(result[0].properties[prop])
+            if(!isNaN(value)) {
+                let pageId = result[0].page.id
+                let page = await this.logseq.Editor.getPage(pageId)
+                if(page) {
+                    let day = page.journalDay.toString()
+                    let date = new Date(day.slice(0, 4) + '-' + day.slice(4, 6) + '-' + day.slice(6) + ' 00:00:00')
+                    metrics.push(new Metric({ date: date, value: value }))
+                }
+            }
+        }
+
+        let data = this.prepareMetricsForLineChart(metrics, mode)
+        return [ { data: data } ]
     }
 }

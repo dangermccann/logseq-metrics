@@ -76,17 +76,26 @@ async function main () {
     if(visualization === 'bar')
         bar()
     else if(visualization === 'line')
-        line('standard')
+        line('metric', 'standard')
     else if(visualization === 'cumulative-line')
-        line('cumulative')
+        line('metric', 'cumulative')
+    else if(visualization === 'properties-line')
+        line('properties', 'standard')
+    else if(visualization === 'properties-cumulative-line')
+        line('properties', 'cumulative')
     else
         console.log(`Invalid visualization: ${visualization}`)
 }
 
-async function line(mode) { 
+async function line(type, mode) { 
     let colorAry = [ colors.color_1, colors.color_2, colors.color_3, colors.color_4, colors.color_5 ]
+    let datasets = []
 
-    let datasets = await dataUtils.loadLineChart(metricname, mode)
+    if(type === 'metric')
+        datasets = await dataUtils.loadLineChart(metricname, mode)
+    else if(type === 'properties')
+        datasets = await dataUtils.propertiesQueryLineChart(metricname, mode)
+
     datasets.forEach((dataset, idx) => {
         dataset.backgroundColor = colorAry[idx % colorAry.length];
         dataset.borderColor = colorAry[idx % colorAry.length];
