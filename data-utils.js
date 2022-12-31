@@ -361,6 +361,7 @@ export class DataUtils {
                 }
             }
         }
+        metrics.sort((a, b) => {return a.date - b.date});
 
         let data = this.prepareMetricsForLineChart(metrics, mode)
         return [ { data: data } ]
