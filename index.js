@@ -169,7 +169,7 @@ class Visualization {
         else if(vizualization === 'latest')
             content = this.latest(metrics)?.value
         else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar'
-            ||  vizualization === 'properties-line' || visualization === 'properties-cumulative-line')
+            ||  vizualization === 'properties-line' || vizualization === 'properties-cumulative-line')
             return this.iframe(uuid, name, childName, vizualization)
         else
             console.log(`Unknown visualization: ${vizualization}`)
