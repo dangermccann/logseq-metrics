@@ -1,9 +1,10 @@
 import '@logseq/libs'
+import { getDateForPage, getDateForPageWithoutBrackets, getDayInText, getScheduledDeadlineDateDay, getScheduledDeadlineDateDayTime } from 'logseq-dateutils';
 
 const DATA_PAGE = "metrics-plugin-data"
 
 export class Metric {
-    date
+    date    // String formatted as: 1970-01-01T00:00:00.000Z
     value
 
 constructor(obj) {
@@ -365,5 +366,29 @@ export class DataUtils {
 
         let data = this.prepareMetricsForLineChart(metrics, mode)
         return [ { data: data } ]
+    }
+
+    async addToJournal(name, child, metric) {
+        // See if the page exists
+        let config = await logseq.App.getUserConfigs()
+        let pageName = getDateForPageWithoutBrackets(new Date(metric.date), config.preferredDateFormat)
+
+        let page = await logseq.Editor.getPage(pageName)
+        if(!page) {
+            console.log(`creating page ${pageName}`)
+            page = await logseq.Editor.createPage(pageName, {}, { createFirstBlock: true, journal: true, redirect: false })
+        }
+
+        let fullName = name
+        if(child) 
+            fullName += ' / ' + child
+
+        let block = await logseq.Editor.appendBlockInPage(page.uuid, `#Metrics ${fullName}`, {
+            properties: {
+                'metric': fullName,
+                'value': metric.value
+            }
+        })
+        
     }
 }

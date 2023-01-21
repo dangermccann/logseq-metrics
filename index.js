@@ -275,8 +275,16 @@ class AddMetricUI {
 
         document.getElementById("create-metrics-enter-button")?.addEventListener('click', async function (e) {
             if(_this.validate()) {
+                // add to metrics data page
                 await dataUtils.enterMetric(_this.metricNameInput.value, _this.childMetricInput.value, 
                     _this.formatMetric())
+
+                // add to journal if checked
+                if(document.getElementById('journal-check').checked) {
+                    console.log("Will add to journal")
+                    await dataUtils.addToJournal(_this.metricNameInput.value, _this.childMetricInput.value, 
+                        JSON.parse(_this.formatMetric()))
+                }
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
 
@@ -357,6 +365,8 @@ class AddMetricUI {
         this.metricNameInput.value = '';
         this.childMetricInput.value = '';
         this.valueInput.value = '';
+
+        document.getElementById('journal-check').checked = settings.add_to_journal || false
 
         let now = new Date();
         this.dateInput.value = now.toLocaleDateString('en-CA')

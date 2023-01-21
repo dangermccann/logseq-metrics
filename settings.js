@@ -38,7 +38,8 @@ export const defaultSettings = {
         color_4: "#E76F51",
         color_5: "#264653"
     },
-    chart_height: 400
+    chart_height: 400,
+    add_to_journal: false
 }
 
 
