@@ -1,8 +1,6 @@
 import '@logseq/libs'
 import { getDateForPage, getDateForPageWithoutBrackets, getDayInText, getScheduledDeadlineDateDay, getScheduledDeadlineDateDayTime } from 'logseq-dateutils';
 
-const DATA_PAGE = "metrics-plugin-data"
-
 export class Metric {
     date    // String formatted as: 1970-01-01T00:00:00.000Z
     value
@@ -34,6 +32,7 @@ export class DataUtils {
     }
 
     async enterMetric(name, childName, entry) {
+        const DATA_PAGE = this.logseq.settings.data_page_name
         let page = await this.logseq.Editor.getPage(DATA_PAGE)
         if(!page) {
             page = await this.logseq.Editor.createPage(DATA_PAGE, {}, { redirect: false })
@@ -135,6 +134,8 @@ export class DataUtils {
     }
 
     prepareMetricsForLineChart(metrics, mode) {
+        metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics));
+
         let data = [];
         let sum = 0;
         metrics.forEach(metric => {
@@ -172,13 +173,11 @@ export class DataUtils {
                 var child = childNames[i];
                 let childName = child.label;
                 let metrics = await this.loadMetrics(metricName, childName)
-                metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
                 datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode), label: childName } )
             }
         }
         else {
             let metrics = await this.loadMetrics(metricName)
-            metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
             datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode) } )
         }
 
@@ -220,6 +219,8 @@ export class DataUtils {
     }
 
     async loadMetrics(metricName, childName) {
+        const DATA_PAGE = this.logseq.settings.data_page_name
+
         var block;
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
         let blockId = await this.findBlock(tree, metricName)
@@ -269,6 +270,7 @@ export class DataUtils {
         console.log(`loadChildMetrics ${metricName}`)
         var metrics = { };
     
+        const DATA_PAGE = this.logseq.settings.data_page_name
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
     
         console.log(`Loaded tree ${tree}`)
@@ -300,6 +302,7 @@ export class DataUtils {
     // Returns list of top-level metric names if `parent` is null.  
     // Returns list of names of child metrics if `parent` is non null.  
     async loadMetricNames(parent) {
+        const DATA_PAGE = this.logseq.settings.data_page_name
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
         let names = []
 
@@ -335,37 +338,40 @@ export class DataUtils {
         return names
     }
 
-    async propertiesQueryLineChart(prop, mode) {
-        let results = await this.logseq.DB.datascriptQuery(`
-        [:find (pull ?b [*])
-          :where
-          [?b :block/page ?p]
-          [?p :block/journal? true]
-          [?b :block/properties ?prop]
-          [(get ?prop :${prop})]
-        ]`)        
+    async propertiesQueryLineChart(properties, mode) {
+        return Promise.all(properties.map(async (prop) => {
+            let results = await this.logseq.DB.datascriptQuery(`
+            [:find (pull ?b [*])
+              :where
+              [?b :block/page ?p]
+              [?p :block/journal? true]
+              [?b :block/properties ?prop]
+              [(get ?prop :${prop})]
+            ]`)        
 
-        if(!results) return [ { data: [] } ]
+            if(!results) return { data: [] }
 
-        let metrics = []
+            let metrics = []
 
-        for(var i = 0; i < results.length; i++) {
-            let result = results[i];
-            let value = parseFloat(result[0].properties[prop])
-            if(!isNaN(value)) {
-                let pageId = result[0].page.id
-                let page = await this.logseq.Editor.getPage(pageId)
-                if(page) {
-                    let day = page.journalDay.toString()
-                    let date = new Date(day.slice(0, 4) + '-' + day.slice(4, 6) + '-' + day.slice(6) + ' 00:00:00')
-                    metrics.push(new Metric({ date: date, value: value }))
+            for(var i = 0; i < results.length; i++) {
+                let result = results[i];
+                let value = parseFloat(result[0].properties[prop])
+                if(!isNaN(value)) {
+                    let pageId = result[0].page.id
+                    let page = await this.logseq.Editor.getPage(pageId)
+                    if(page) {
+                        let day = page.journalDay.toString()
+                        let date = new Date(day.slice(0, 4) + '-' + day.slice(4, 6) + '-' + day.slice(6) + ' 00:00:00')
+                        metrics.push(new Metric({ date: date, value: value }))
+                    }
                 }
             }
-        }
-        metrics.sort((a, b) => {return a.date - b.date});
 
-        let data = this.prepareMetricsForLineChart(metrics, mode)
-        return [ { data: data } ]
+            return {
+                label: prop,
+                data: this.prepareMetricsForLineChart(metrics, mode),
+            }
+        }))
     }
 
     async addToJournal(name, child, metric) {
@@ -383,10 +389,10 @@ export class DataUtils {
         if(child) 
             fullName += ' / ' + child
 
-        let block = await logseq.Editor.appendBlockInPage(page.uuid, `#Metrics ${fullName}`, {
+        let text = this.logseq.settings.journal_title.replaceAll('${metric}', fullName)
+        let block = await logseq.Editor.appendBlockInPage(page.uuid, text, {
             properties: {
-                'metric': fullName,
-                'value': metric.value
+                [fullName]: metric.value
             }
         })
         

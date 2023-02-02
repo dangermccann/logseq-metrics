@@ -38,7 +38,8 @@ const chartOptions = {
                 color: colors.text_color,
                 padding: 10,
                 backdropPadding: 10
-            }
+            },
+            time: {}
         },
         yAxis: {
             grid: {
@@ -59,7 +60,6 @@ const chartOptions = {
     plugins: {
         title: {
             display: true,
-            text: metricname,
             color: colors.text_color
         },
         legend: {
@@ -87,14 +87,32 @@ async function main () {
         console.log(`Invalid visualization: ${visualization}`)
 }
 
+function splitBy(text, delimeters=' |:') {
+    text = text || ""
+    if(!text)
+        return []
+
+    let chars = `[${delimeters}]+`
+    text = text.replace(new RegExp('^' + chars), '')
+    text = text.replace(new RegExp(chars + '$'), '')
+    return text.split(new RegExp(chars))
+}
+
 async function line(type, mode) { 
     let colorAry = [ colors.color_1, colors.color_2, colors.color_3, colors.color_4, colors.color_5 ]
     let datasets = []
 
-    if(type === 'metric')
-        datasets = await dataUtils.loadLineChart(metricname, mode)
-    else if(type === 'properties')
-        datasets = await dataUtils.propertiesQueryLineChart(metricname, mode)
+    if(type === 'metric') {
+        chartOptions.plugins.title.text = metricname;
+        datasets = await dataUtils.loadLineChart(metricname, mode);
+    }
+    else if(type === 'properties') {
+        let config = await logseq.App.getUserConfigs();
+        chartOptions.scales.xAxis.time.tooltipFormat = config.preferredDateFormat;
+
+        chartOptions.plugins.title.text = (childname === '-' ? '' : childname);
+        datasets = await dataUtils.propertiesQueryLineChart(splitBy(metricname), mode);
+    }
 
     datasets.forEach((dataset, idx) => {
         dataset.backgroundColor = colorAry[idx % colorAry.length];
@@ -102,9 +120,7 @@ async function line(type, mode) {
     })
 
     chartOptions.scales.xAxis.type = 'time';
-    chartOptions.scales.xAxis.time = {
-        unit: 'day'
-    }
+    chartOptions.scales.xAxis.time.unit = 'day';
     chartOptions.elements = {
         line: {
             tension: 0.1

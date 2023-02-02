@@ -38,7 +38,14 @@ async function main () {
     let addVizualizationUI = new AddVizualizationUI();
     addVizualizationUI.setUpUIHandlers();
 
-    logseq.Editor.registerSlashCommand("Metrics Add", async () => {
+    logseq.Editor.registerSlashCommand("Metrics → Add", async () => {
+        await logseq.Editor.insertAtEditingCursor("CHANGED: Use command palette to add new metric: ⌘+⇧+P or Ctrl+Shift+P");
+    })
+
+    logseq.App.registerCommandPalette({
+        key: 'metrics-add',
+        label: 'Metrics → Add',
+    }, async (e) => {
         addVizualizationUI.hide()
         addMetricUI.show()
         addMetricUI.clear()
@@ -51,7 +58,7 @@ async function main () {
         }, 200);
     })
 
-    logseq.Editor.registerSlashCommand("Metrics Visualize", async () => {
+    logseq.Editor.registerSlashCommand("Metrics → Visualize", async () => {
         addMetricUI.hide()
         addVizualizationUI.show()
         addVizualizationUI.clear()
@@ -65,8 +72,8 @@ async function main () {
         
     })
 
-    logseq.Editor.registerSlashCommand("Metrics Properties Chart", async () => { 
-        const content = `{{renderer :metrics, YOUR PROPERTY NAME HERE, -, properties-line}}`
+    logseq.Editor.registerSlashCommand("Metrics → Properties Chart", async () => { 
+        const content = '{{renderer :metrics, :property1 :property2, TITLE (use "-" to leave empty), properties-line}}'
 
         const block = await logseq.Editor.getCurrentBlock()
         if(block) {
@@ -75,7 +82,6 @@ async function main () {
             setTimeout(() => {
                 logseq.Editor.editBlock(block.uuid, { pos: 21 })
             }, 50)
-            
         }
     })
 
