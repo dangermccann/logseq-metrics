@@ -9,14 +9,14 @@ The plugin also supports Child Metrics to allow logically similar Metrics to be 
 
 ## Usage 
 
-The plugin uses three slash commands: 
-- **Metrics Add** – Displays an interface to store a single Data Point for a Metric (and optionally a Child Metric) that you specify.  
-- **Metrics Visualize** – Displays an interface to insert a [Card](#card), [Bar Chart](#bar-chart) or [Line Chart](#line-chart) visualization into the current block on the current page.  
-- **Metrics Properties Chart** – Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
+The plugin uses three commands: 
+- **Metrics → Add** – Runs via `Command Palette` (⌘⇧P or Ctrl+Shift+P). Displays an interface to store a single Data Point for a Metric (and optionally a Child Metric) that you specify.  
+- **Metrics → Visualize** – `Slash-command` (type "/" while editing a block). Displays an interface to insert a [Card](#card), [Bar Chart](#bar-chart) or [Line Chart](#line-chart) visualization into the current block on the current page.  
+- **Metrics → Properties Chart** – `Slash-command` (type "/" while editing a block). Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
 
 ## Visualization Types
 
-You embed a visualization in your graph using the **Metrics Visualize** slash command.  
+You embed a visualization in your graph using the **Metrics → Visualize** slash-command.  
 
 ### Card
 A card displays a single value calcualted from the Data Points for a single Metric or Child Metric.  The following cards are supported:
@@ -51,7 +51,7 @@ The `metric` and `child metric` arguments refer to the Metric and Child Metric w
 - `cumulative-line` – Line Chart displaying the aggegate value of a Metric or Child Metrics over time 
 
 ### Data Storage
-Data for the metrics and data points is stored in the `metrics-plugin-data` page.  Each Metric, Child Meric and Data Point is stored on individual blocks on this page.  For example, storage of a Metric called *Movies Watched* with Child Metrics for *Comedy*, *Drama* and *Horror* movies is stored as follows: 
+Data for the metrics and data points is stored in the `metrics-plugin-data` page (could be changed in plugin settings).  Each Metric, Child Meric and Data Point is stored on individual blocks on this page.  For example, storage of a Metric called *Movies Watched* with Child Metrics for *Comedy*, *Drama* and *Horror* movies is stored as follows: 
 
 - Movies Watched  
 	- Comedy  
@@ -67,15 +67,18 @@ Data for the metrics and data points is stored in the `metrics-plugin-data` page
 
 Data points are stored as JSON objects with two attributes:
 - `date` – The date and time associated with the data point.  
-- `value` – The value of the data point.  It can be an integer, float or string.  If storing non-numeric data as a string, the only visualization that will work is the Latest Card (for example, you can use this to display a Card showing the name of the last book you read. 
+- `value` – The value of the data point.  It can be an integer, float or string.  If storing non-numeric data as a string, the only visualization that will work is the Latest Card (for example, you can use this to display a Card showing the name of the last book you read.
 
 ## Properties Charts
-A Properties Chart visualizes how [Logseq properties](https://discuss.logseq.com/t/lesson-5-how-to-power-your-workflows-using-properties-and-dynamic-variables/10173#what-are-logseq-properties-1) in your journal change over time.  To use this chart type first enter some numberic properties on your journal pages.  In the example below, there are entries for the `weight::` property on three journal pages.  
+A Properties Chart visualizes how [Logseq properties](https://discuss.logseq.com/t/lesson-5-how-to-power-your-workflows-using-properties-and-dynamic-variables/10173#what-are-logseq-properties-1) in your journal change over time.  To use this chart type first enter some numberic properties on your journal pages.  In the example below, there are entries for the `weight::` property on three journal pages.
+
+Use the **Metrics → Properties Chart** slash-command and enter the property name (`weight`) into the first argument of the renderer:
+`{{renderer :metrics, weight, -, properties-line}}`. The result looks like:
 
 ![PropertiesChart](./images/properties-chart.png)
 
-Then use the **Metrics Properties Chart** slash command and enter the property name (`weight`) into the first argument of the renderer:
-`{{renderer :metrics, weight, -, properties-line}}`
+Also several properties could be displayed on the same chart. Use a colon ":", a pipe "|" or a space " " to separate their names (! but NOT a comma ","): `{{renderer :metrics, weight | kcal, -, properties-line}}`.
+
 
 ## Feedback 
 I'd love to hear what you think of this plugin or if you have any suggestions for how to make it better!  Please [submit an issue](https://github.com/dangermccann/logseq-metrics/issues/new) on my Github to let share your feedback or to report bugs. 
