@@ -387,7 +387,9 @@ export class DataUtils {
 
         let fullName = name
         if(child) 
-            fullName += ' / ' + child
+            fullName += '/' + child
+
+        fullName = fullName.replaceAll(' ', '-')
 
         let text = this.logseq.settings.journal_title.replaceAll('${metric}', fullName)
         let block = await logseq.Editor.appendBlockInPage(page.uuid, text, {
