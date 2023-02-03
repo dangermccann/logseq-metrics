@@ -22,7 +22,7 @@
         "logseq-dateutils": "latest"
     },
     "logseq": {
-        "id": "logseq-metrics",
+        "id": "_logseq-metrics",
         "main": "dist/index.html",
         "icon": "./logo.png"
     },
