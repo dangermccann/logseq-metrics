@@ -1,11 +1,26 @@
 import '@logseq/libs'
 import { getDateForPage, getDateForPageWithoutBrackets, getDayInText, getScheduledDeadlineDateDay, getScheduledDeadlineDateDayTime } from 'logseq-dateutils';
+import {logseq as packageInfo} from './package.json'
+
+
+function loggerWrapper(console_) {
+    const prefix = `#${packageInfo.id}: `
+    return {
+        debug: msg => { console_.debug(prefix + msg) },
+        info: msg => { console_.info(prefix + msg) },
+        log: msg => { console_.log(prefix + msg) },
+        warn: msg => { console_.warn(prefix + msg) },
+        error: msg => { console_.error(prefix + msg) },
+    }
+}
+
+export const logger = console = loggerWrapper(console)
 
 export class Metric {
     date    // String formatted as: 1970-01-01T00:00:00.000Z
     value
 
-constructor(obj) {
+    constructor(obj) {
         this.date = obj.date
         this.value = obj.value
     }
@@ -41,7 +56,7 @@ export class DataUtils {
                 console.log(`Created page ${DATA_PAGE}`)
             }
             else {
-                console.log(`Failed to create page ${DATA_PAGE}`)
+                console.warn(`Failed to create page ${DATA_PAGE}`)
                 return
             }
         }
@@ -51,17 +66,17 @@ export class DataUtils {
 
         let tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
 
-        console.log(`Loaded tree with ${tree.length} blocks`)
+        console.debug(`Loaded tree with ${tree.length} blocks`)
 
         var blockId;
         if(tree.length == 0) {
-            console.log(`Page is empty.  Inserting block ${name}`)
+            console.debug(`Page is empty.  Inserting block ${name}`)
             blockId = (await this.logseq.Editor.appendBlockInPage(DATA_PAGE, name))?.uuid
         }
         else {
             blockId = await this.findOrCreateBlock(tree, name)
             if(blockId === null) {
-                console.log("Can not locate block to insert metric")
+                console.debug("Can not locate block to insert metric")
                 return
             }
         }
@@ -78,7 +93,7 @@ export class DataUtils {
             else {
                 let childId = await this.findOrCreateBlock(parentBlock?.children, childName)
                 if(childId === null) {
-                    console.log("Can not locate block to insert metric")
+                    console.warn("Can not locate block to insert metric")
                     return
                 }
                 blockId = childId
@@ -90,14 +105,14 @@ export class DataUtils {
             before: false, sibling: false, isPageBlock: false
         })
         if(!metricBlock) {
-            console.log(`Failed to insert metric: ${entry}`)
+            console.warn(`Failed to insert metric: ${entry}`)
         }
         else {
             console.log(`Metric inserted successfully: ${entry}`)
             
             let formattedName = name;
             if(childName)
-                formattedName += " :: " + childName
+                formattedName += " / " + childName
             
             logseq.UI.showMsg(`Inserted data point for metric ${formattedName}.`)
         }
@@ -109,7 +124,7 @@ export class DataUtils {
 
         tree.forEach(async function (value) {
             if(value.content === name) {
-                console.log(`Iteration name match ${value.content} , ${value.children}`)
+                console.debug(`Iteration name match ${value.content}, ${value.children}`)
                 found = value.uuid
                 return
             }
@@ -118,13 +133,13 @@ export class DataUtils {
         if(found)
             return found
 
-        console.log(`Block not found, inserting block at ${tree[tree.length - 1].uuid}`)
+        console.debug(`Block not found, inserting block at ${tree[tree.length - 1].uuid}`)
 
         let block = await this.logseq.Editor.insertBlock(tree[tree.length - 1].uuid, name, {
             before: false, sibling: true, isPageBlock: false
         })
         if(!block) {
-            console.log(`Failed to create block ${name}`)
+            console.warn(`Failed to create block ${name}`)
             return null
         }
 
@@ -146,7 +161,7 @@ export class DataUtils {
                 date = new Date(metric.date)
                 value = { x: date, y: (mode === 'cumulative') ? sum : y }
             } catch { 
-                console.log(`Invalid meric.  date: ${metric.date}, value: ${metric.value}`)
+                console.debug(`Invalid meric.  date: ${metric.date}, value: ${metric.value}`)
             }
             
             data.push(value)
@@ -267,13 +282,13 @@ export class DataUtils {
     }
 
     async loadChildMetrics(metricName) {
-        console.log(`loadChildMetrics ${metricName}`)
-        var metrics = { };
+        console.log(`Loading child metrics for ${metricName}`)
+        var metrics = {};
     
         const DATA_PAGE = this.logseq.settings.data_page_name
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
     
-        console.log(`Loaded tree ${tree}`)
+        console.debug(`Loaded tree: ${JSON.stringify(tree)}`);
     
         let blockId = await this.findBlock(tree, metricName)
         
@@ -381,7 +396,7 @@ export class DataUtils {
 
         let page = await logseq.Editor.getPage(pageName)
         if(!page) {
-            console.log(`creating page ${pageName}`)
+            console.log(`Creating page ${pageName}`)
             page = await logseq.Editor.createPage(pageName, {}, { createFirstBlock: true, journal: true, redirect: false })
         }
 

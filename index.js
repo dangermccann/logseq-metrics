@@ -1,41 +1,57 @@
 import '@logseq/libs'
-import { DataUtils, Metric } from './data-utils'
-import { Settings, ColorSettings, defaultSettings, mergeDeep } from './settings'
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
+import { DataUtils, Metric, logger as console } from './data-utils'
+import { defaultSettings, mergeDeep, equalsDeep } from './settings'
 
-let settings = new Settings()
-let themeMode = "dark"
-var dataUtils;
+
+var dataUtils
 var hooks = []
 
-async function main () {
+
+async function isDarkMode() {
+    return (await logseq.App.getUserConfigs()).preferredThemeMode === 'dark'
+}
+
+
+function cssVars(names) {
+    const style = getComputedStyle(top.document.documentElement)
+    return names.map((name) => {return style.getPropertyValue(name)})
+}
+
+
+async function refreshBlock(uuid) {
+    const block = await logseq.Editor.getBlock(uuid)
+    if(!block || !block.content)
+        return
+
+    await logseq.Editor.updateBlock(uuid, "")
+    await logseq.Editor.updateBlock(uuid, block.content)
+    console.debug(`Refreshed block: ${uuid}`)
+}
+
+
+async function main() {
     const addMetricEl = document.getElementById('add-metric')
+    const addVisualizationEl = document.getElementById('visualize-metrics')
     if(!addMetricEl) {
         console.warn("Could not find main div")
         return;
     }
 
-    const addVisualizationEl = document.getElementById('visualize-metrics')
+    if(await isDarkMode())
+        document.body.classList.add("dark")
+
+    // load settings, merge with defaults and save back so they can be modified by user
+    logseq.updateSettings(mergeDeep({...defaultSettings}, logseq.settings))
 
     dataUtils = new DataUtils(logseq)
 
-    // "light" or "dark"
-    themeMode = (await logseq.App.getUserConfigs()).preferredThemeMode;
-    
-    if(themeMode === 'dark')
-        document.body.classList.add("dark")
-    
-    // load settings and merge with defaults if none are present
-    settings = Object.assign({}, defaultSettings)
-    mergeDeep(settings, logseq.settings)
-
-    // save settings so they can be modified later
-    logseq.updateSettings(settings)
-
     // prepare UI for adding metrics
-    let addMetricUI = new AddMetricUI();
+    const addMetricUI = new AddMetricUI();
     addMetricUI.setUpUIHandlers();
 
-    let addVizualizationUI = new AddVizualizationUI();
+    const addVizualizationUI = new AddVizualizationUI();
     addVizualizationUI.setUpUIHandlers();
 
     logseq.Editor.registerSlashCommand("Metrics → Add", async () => {
@@ -89,117 +105,184 @@ async function main () {
         const [type, metric, childMetric, visualization] = payload.arguments
         if(type !== ":metrics") return
 
-        console.log(`onMacroRendererSlotted slot: ${slot} | type: ${visualization}`)
+        const slotEl = top.document.getElementById(slot)
+        if(slotEl) {
+            slotEl.style.width = "100%"
 
-        const viz = new Visualization()
+            const hook = hooks.find(o => {return o.visualization.slot == slot})
+            if (hook) {
+                hook.visualization.postRender().then()
+                return
+            }
+        }
+
+        const viz = Visualization.selectType(payload.uuid, slot, metric, childMetric, visualization)
+        if(!viz) {
+            console.log(`Unknown visualization: ${visualization}`)
+            return
+        }
+
+        console.debug(`onMacroRendererSlotted slot: ${slot} | type: ${visualization}`)
 
         // TODO: figure out if we need this 'key' to be durable, as in, set to something unique that is encoded in
         // the {{renderer ...}} block.  The 'slot' value will change each time its rendered.  
-        viz.render(payload.uuid, slot, metric, childMetric, visualization).then((html) => {
+        viz.render().then((html) => {
             logseq.provideUI({
                 key: `metrics-${slot}`,
-                slot,
+                slot: slot,
                 template: html,
                 reset: true,
                 style: { flex: 1 }
             })
-        })
+        }).then(async () => {await viz.postRender()})
 
-        if(!hooks.includes(payload.uuid))
-            hooks.push({ metric: metric, uuid: payload.uuid })
+        if(!hooks.find(o => {return o.uuid == payload.uuid}))
+            hooks.push({ metric: metric, uuid: payload.uuid, visualization: viz })
     })
 
-    logseq.App.onThemeModeChanged((mode) => {
-        themeMode = mode.mode;
-        if(themeMode === 'dark')
+    const changeColorsHook = async (data) => {
+        hooks.forEach(async (hook) => {
+            await hook.visualization.postRender()
+        })
+
+        if(data.mode === "dark")
             document.body.classList.add("dark")
         else 
             document.body.classList.remove("dark")
-    })
+    }
+
+    logseq.App.onThemeChanged(changeColorsHook)
+    logseq.App.onThemeModeChanged(changeColorsHook)
 
     logseq.App.onRouteChanged((path, template) => {
         hooks = []
     })
 
     logseq.provideStyle(`
-        .metrics-iframe {
+        :root {
+          --metrics-bg-color1: var(--ls-primary-background-color);
+          --metrics-bg-color2: var(--ls-secondary-background-color);
+          --metrics-border-color: var(--ls-border-color);
+          --metrics-text-color: var(--ls-primary-text-color);
+
+          --metrics-color1: #0f9bd7;
+          --metrics-color2: #30b5a6;
+          --metrics-color3: #e6c700;
+          --metrics-color4: #e66f00;
+          --metrics-color5: #e2036b;
+          --metrics-color6: #8639ac;
+          --metrics-color7: #727274;
+
+          // Reserved for future use
+          // Nice idea, but not all theme devs adapt highlight vars (it is fresh feature)
+          // --metrics-color1: var(--ls-highlight-color-blue);
+          // --metrics-color2: var(--ls-highlight-color-green);
+          // --metrics-color3: var(--ls-highlight-color-yellow);
+          // --metrics-color4: var(--ls-highlight-color-red);
+          // --metrics-color5: var(--ls-highlight-color-pink);
+          // --metrics-color6: var(--ls-highlight-color-purple);
+          // --metrics-color7: var(--ls-highlight-color-gray);
+        }
+
+        .metrics-card {
+          height: 11rem;
+          color: var(--metrics-text-color);
+          border-color: var(--metrics-border-color);
+          background-color: var(--metrics-bg-color1);
+        }
+        .metrics-card > div:nth-child(1) {
+          background-color: var(--metrics-bg-color2);
+        }
+        .metrics-card > div:nth-child(2) {
+          margin: auto;
+        }
+
+        .metrics-chart {
             width: 100%;
-            height: ${settings.chart_height}px;
+            height: ${logseq.settings.chart_height}px;
             margin: 0;
-        }`
-    )
+            border-color: var(--metrics-border-color);
+            background-color: var(--metrics-bg-color1);
+        }
+    `)
 
-    console.log("Loaded Metrics plugin")
-
+    console.log("Loaded")
 }
 
-function getPluginDir() {
-    const iframe = parent?.document?.getElementById(`${logseq.baseInfo.id}_iframe`,)
-    const pluginSrc = iframe.src
-    const index = pluginSrc.lastIndexOf("/")
-    return pluginSrc.substring(0, index)
-}
 
+function splitBy(text, delimeters=' |:') {
+    text = text || ""
+    if(!text)
+        return []
+
+    let chars = `[${delimeters}]+`
+    text = text.replace(new RegExp('^' + chars), '')
+    text = text.replace(new RegExp(chars + '$'), '')
+    return text.split(new RegExp(chars))
+}
 
 
 class Visualization {
-    constructor() {}
+    needRepaintOnChangingColors = false
 
-    async render(uuid, slot, name, childName, vizualization) {
+    constructor(uuid, slot, metric, childMetric, type) {
+        if (this.constructor === Visualization)
+            throw new Error('Abstract class')
+
+        this.uuid = uuid
+        this.slot = slot
+        this.metric = metric
+        this.childMetric = childMetric
+        this.type = type
+    }
+
+    static selectType(uuid, slot, name, childName, visualization) {
         name = name.trim()
         childName = childName.trim()
-        vizualization = vizualization.trim()
+        childName = childName === '-' ? '' : childName 
+        visualization = visualization.trim()
 
-        if(childName === '-') 
-            childName = ''
+        const allowedCardVisualizations = ['sum', 'average', 'latest']
+        const allowedChartVisualizations = ['line', 'cumulative-line', 'bar', 'properties-line', 'properties-cumulative-line']
+
+        if(allowedCardVisualizations.includes(visualization))
+            return new CardVisualization(uuid, slot, name, childName, visualization)
+
+        if(allowedChartVisualizations.includes(visualization))
+            return new ChartVisualization(uuid, slot, name, childName, visualization)
+
+        return null
+    }
+
+    async render() {
+        throw new Error("Should be implemented in child class")
+    }
+
+    async postRender() {}
+}
 
 
-        const slotEl = parent.document.getElementById(slot)
-        if(slotEl)
-            slotEl.style.width = "100%"
+class CardVisualization extends Visualization {
+    async render() {
+        const metrics = await dataUtils.loadMetrics(this.metric, this.childMetric)
 
-        const colors = themeMode === "dark" ? settings.dark : settings.light
+        console.log(`Loaded ${metrics.length} metrics.`)
 
-        // TODO: don't load the metrics if we're going to embed an iframe 
-        const metrics = await dataUtils.loadMetrics(name, childName)
-        //if(!metrics)
-        //    return `<h2>ERROR loading ${name}</h2>`
+        const [ title, calcFunc ] = {
+            sum: ["Total", this.sum],
+            average: ["Average", this.average],
+            latest: ["Latest", this.latest],
+        }[this.type]
 
-        console.log(`Loaded ${metrics.length} metrics.  Rendering ${vizualization}`)
+        const label = `${title} ${this.metric}${this.childMetric ? " / " + this.childMetric : ""}`
+        const value = calcFunc(metrics)
 
-        let content = ''
-        if(vizualization === 'sum')
-            content = this.sum(metrics).toString()
-        else if(vizualization === 'average')
-            content = this.average(metrics).toFixed(2).toString()
-        else if(vizualization === 'latest')
-            content = this.latest(metrics)?.value
-        else if(vizualization === 'line' || vizualization === 'cumulative-line' || vizualization === 'bar'
-            ||  vizualization === 'properties-line' || vizualization === 'properties-cumulative-line')
-            return this.iframe(uuid, name, childName, vizualization)
-        else
-            console.log(`Unknown visualization: ${vizualization}`)
-
-        let html = `
-            <div class="w-48 flex flex-col text-center border" 
-                  style="height:11rem; background-color: ${colors.bg_color_1};
-                  color: ${colors.text_color};
-                  border-color: ${colors.border_color};">
-              <div class="w-full text-lg p-2" style="background-color: ${colors.bg_color_2};">`
-
-        if(vizualization === 'sum')
-            html += "Total "
-        else if(vizualization === 'average')
-            html += "Average "
-            
-        if(childName && childName.length > 0)
-            html += childName
-        else
-            html += name
-
-        html += `</div><div class="w-full text-4xl" style="margin: auto;"><span>${content}</span></div></div>`
-
-        return html
+        return `
+            <div class="metrics-card w-48 flex flex-col text-center border">
+                <div class="w-full text-lg p-2">${label}</div>
+                <div class="w-full text-4xl"><span>${value}</span></div>
+            </div>
+        `.trim()
     }
 
     sum(metrics) {
@@ -215,25 +298,201 @@ class Visualization {
     average(metrics) {
         if(metrics.length === 0) return 0
 
-        return this.sum(metrics) / metrics.length
+        return (this.sum(metrics) / metrics.length).toFixed(2)
     }
     
     latest(metrics) {
         if(metrics.length === 0) return null
 
-        const sorted = metrics.sort((a, b) => {
-            return (new Date(b.date).getTime() - new Date(a.date).getTime())
-        })
-        return sorted[0]
-    }
-
-    iframe(uuid, name, childName, vizualization) {
-        return `<iframe class="metrics-iframe" src="${getPluginDir()}/inline.html"
-            data-metricname="${name}" data-childname="${childName}"
-            data-frame="${logseq.baseInfo.id}_iframe" data-uuid="${uuid}"
-            data-visualization="${vizualization}"></iframe>`
+        return dataUtils.sortMetricsByDate(metrics).slice(-1).value
     }
 }
+
+
+class ChartVisualization extends Visualization {
+    needRepaintOnChangingColors = true
+    chart = null
+
+    async render() {
+        return `
+            <div class="metrics-chart flex flex-col border">
+                <canvas id="chart_${this.slot}"></canvas>
+            </div>
+        `.trim()
+    }
+
+    async postRender() {
+        if (this.chart)
+            this.chart.destroy()
+
+        if(this.type === 'bar')
+            this.chart = await this.bar()
+        else if(this.type === 'line')
+            this.chart = await this.line('metric', 'standard')
+        else if(this.type === 'cumulative-line')
+            this.chart = await this.line('metric', 'cumulative')
+        else if(this.type === 'properties-line')
+            this.chart = await this.line('properties', 'standard')
+        else if(this.type === 'properties-cumulative-line')
+            this.chart = await this.line('properties', 'cumulative')
+
+        return this.chart
+    }
+
+    getChartColors() {
+        return cssVars([
+            '--metrics-color1',
+            '--metrics-color2',
+            '--metrics-color3',
+            '--metrics-color4',
+            '--metrics-color5',
+            '--metrics-color6',
+            '--metrics-color7',
+        ])
+    }
+
+    getChartOptions() {
+        const [ textColor, borderColor ] = cssVars([
+            '--metrics-text-color',
+            '--metrics-border-color',
+        ])
+
+        return {
+            maintainAspectRatio: false,
+            responsive: true,
+            animation: true,
+            layout: {
+                padding: 10
+            },
+            scales: {
+                xAxis: {
+                    grid: {
+                        tickColor: borderColor,
+                        color: borderColor,
+                        borderColor: borderColor,
+                        drawBorder: false,
+                        drawTicks: false,
+                        display: false
+                    },
+                    ticks: {
+                        color: textColor,
+                        padding: 10,
+                        backdropPadding: 10
+                    },
+                    time: {}
+                },
+                yAxis: {
+                    grid: {
+                        tickColor: borderColor,
+                        color: borderColor,
+                        borderColor: borderColor,
+                        drawBorder: true,
+                        drawTicks: false,
+                        display: true
+                    },
+                    ticks: {
+                        color: textColor,
+                        padding: 10,
+                        backdropPadding: 10
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    color: textColor
+                },
+                legend: {
+                    display: false,
+                    labels: {
+                        color: textColor
+                    }
+                }
+            }
+        }
+    }
+
+    async line(type, mode) {
+        const chartOptions = this.getChartOptions()
+        let datasets = []
+
+        if(type === 'metric') {
+            chartOptions.plugins.title.text = this.metric;
+            datasets = await dataUtils.loadLineChart(this.metric, mode);
+        }
+        else if(type === 'properties') {
+            let config = await logseq.App.getUserConfigs();
+            chartOptions.scales.xAxis.time.tooltipFormat = config.preferredDateFormat;
+
+            chartOptions.plugins.title.text = (this.childMetric === '-' ? '' : this.childMetric);
+            datasets = await dataUtils.propertiesQueryLineChart(splitBy(this.metric), mode);
+        }
+
+        const colors = this.getChartColors()
+        datasets.forEach((dataset, idx) => {
+            dataset.backgroundColor = dataset.borderColor = colors[idx % colors.length]
+        })
+
+        chartOptions.scales.xAxis.type = 'time';
+        chartOptions.scales.xAxis.time.unit = 'day';
+        chartOptions.elements = {
+            line: {
+                tension: 0.1
+            }
+        }
+
+        if(datasets.length > 1)
+            chartOptions.plugins.legend.display = true
+
+        return new Chart(
+            top.document.getElementById(`chart_${this.slot}`),
+            {
+                type: 'line',
+                data: {
+                    datasets: datasets
+                },
+                options: chartOptions
+            }
+        )
+    }
+
+    async bar() {
+        const chartOptions = this.getChartOptions()
+
+        var metrics = await dataUtils.loadChildMetrics(this.metric)
+        var labels = []
+        var values = []
+
+        Object.keys(metrics).forEach((key) => {
+            labels.push(key)
+            var value = 0;
+
+            metrics[key].forEach((metric) => {
+                var num = Number.parseFloat(metric.value)
+                if(!isNaN(num))
+                    value += num
+            })
+
+            values.push(value)
+        })
+
+        return new Chart(
+            top.document.getElementById(`chart_${this.slot}`),
+            {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: this.getChartColors()
+                    }]
+                },
+                options: chartOptions
+            }
+        )
+    }
+}
+
 
 class AddMetricUI {
     root;
@@ -295,12 +554,8 @@ class AddMetricUI {
                 logseq.hideMainUI({ restoreEditingCursor: true })
 
                 hooks.forEach(async (hook) => {
-                    if(hook.metric === _this.metricNameInput.value) {
-                        let block = await logseq.Editor.getBlock(hook.uuid)
-                        await logseq.Editor.updateBlock(hook.uuid, "")
-                        await logseq.Editor.updateBlock(hook.uuid, block.content)
-                        console.log(`Refreshed block ${hook.uuid}`)
-                    }
+                    if(hook.metric === _this.metricNameInput.value)
+                        await refreshBlock(hook.uuid)
                 })
                 
             }
@@ -372,7 +627,7 @@ class AddMetricUI {
         this.childMetricInput.value = '';
         this.valueInput.value = '';
 
-        document.getElementById('journal-check').checked = settings.add_to_journal || false
+        document.getElementById('journal-check').checked = logseq.settings.add_to_journal || false
 
         let now = new Date();
         this.dateInput.value = now.toLocaleDateString('en-CA')
@@ -429,7 +684,6 @@ class AddMetricUI {
         input.classList.add("focus:border-sky-500")
     }
 
-
     show() {
         this.root.classList.remove("hidden")
     }
@@ -437,8 +691,8 @@ class AddMetricUI {
     hide() {
         this.root.classList.add("hidden")
     }
-
 }
+
 
 class AddVizualizationUI {
     root;
@@ -573,6 +827,7 @@ class AddVizualizationUI {
     }
 }
 
+
 class AutoComplete {
     static doAutoComplete(e, container, data) {
         if(e.target.value == '') {
@@ -652,5 +907,6 @@ class AutoComplete {
     }
 }
 
+
 // bootstrap
-logseq.ready(main).catch(console.error)
+logseq.ready().then(main).catch(console.error)
