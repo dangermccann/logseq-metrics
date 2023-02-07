@@ -1,12 +1,13 @@
 import '@logseq/libs'
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
-import { DataUtils, Metric, logger as console } from './data-utils'
-import { defaultSettings, mergeDeep, equalsDeep } from './settings'
+import { DataUtils, Metric, logger } from './data-utils'
+import { defaultSettings, mergeDeep } from './settings'
 
 
 var dataUtils
-var hooks = []
+var hooks = {}
+console = logger
 
 
 async function isDarkMode() {
@@ -33,19 +34,20 @@ async function refreshBlock(uuid) {
 
 async function main() {
     const addMetricEl = document.getElementById('add-metric')
-    const addVisualizationEl = document.getElementById('visualize-metrics')
     if(!addMetricEl) {
         console.warn("Could not find main div")
         return;
     }
+
+    const addVisualizationEl = document.getElementById('visualize-metrics')
+
+    dataUtils = new DataUtils(logseq)
 
     if(await isDarkMode())
         document.body.classList.add("dark")
 
     // load settings, merge with defaults and save back so they can be modified by user
     logseq.updateSettings(mergeDeep({...defaultSettings}, logseq.settings))
-
-    dataUtils = new DataUtils(logseq)
 
     // prepare UI for adding metrics
     const addMetricUI = new AddMetricUI();
@@ -101,7 +103,15 @@ async function main() {
         }
     })
 
-    logseq.App.onMacroRendererSlotted(({ slot, payload }) => {
+    logseq.provideModel({
+        async editBlock(e) {
+          const { uuid } = e.dataset
+          await logseq.Editor.editBlock(uuid)
+        }
+    })
+
+    logseq.App.onMacroRendererSlotted(async ({ slot, payload }) => {
+        const uuid = payload.uuid
         const [type, metric, childMetric, visualization] = payload.arguments
         if(type !== ":metrics") return
 
@@ -109,14 +119,14 @@ async function main() {
         if(slotEl) {
             slotEl.style.width = "100%"
 
-            const hook = hooks.find(o => {return o.visualization.slot == slot})
-            if (hook) {
-                hook.visualization.postRender().then()
+            const viz = Object.values(hooks).find(o => {return o.slot == slot})
+            if (viz) {
+                await viz.postRender()
                 return
             }
         }
 
-        const viz = Visualization.selectType(payload.uuid, slot, metric, childMetric, visualization)
+        const viz = Visualization.selectType(uuid, slot, metric, childMetric, visualization)
         if(!viz) {
             console.log(`Unknown visualization: ${visualization}`)
             return
@@ -126,24 +136,24 @@ async function main() {
 
         // TODO: figure out if we need this 'key' to be durable, as in, set to something unique that is encoded in
         // the {{renderer ...}} block.  The 'slot' value will change each time its rendered.  
-        viz.render().then((html) => {
-            logseq.provideUI({
-                key: `metrics-${slot}`,
-                slot: slot,
-                template: html,
-                reset: true,
-                style: { flex: 1 }
-            })
-        }).then(async () => {await viz.postRender()})
+        const html = await viz.render()
+        logseq.provideUI({
+            key: `metrics-${slot}`,
+            slot: slot,
+            template: html,
+            reset: true,
+            style: { flex: 1}
+        })
+        await viz.postRender()
 
-        if(!hooks.find(o => {return o.uuid == payload.uuid}))
-            hooks.push({ metric: metric, uuid: payload.uuid, visualization: viz })
+        if(uuid in hooks)
+            hooks[uuid].release()
+        hooks[uuid] = viz
     })
 
     const changeColorsHook = async (data) => {
-        hooks.forEach(async (hook) => {
-            await hook.visualization.postRender()
-        })
+        for (const viz of Object.values(hooks))
+            await viz.postRender()
 
         if(data.mode === "dark")
             document.body.classList.add("dark")
@@ -155,7 +165,7 @@ async function main() {
     logseq.App.onThemeModeChanged(changeColorsHook)
 
     logseq.App.onRouteChanged((path, template) => {
-        hooks = []
+        hooks = {}
     })
 
     logseq.provideStyle(`
@@ -174,7 +184,7 @@ async function main() {
           --metrics-color7: #727274;
 
           // Reserved for future use
-          // Nice idea, but not all theme devs adapt highlight vars (it is fresh feature)
+          // Nice idea, but not all themes adapt highlight vars (it is fresh feature)
           // --metrics-color1: var(--ls-highlight-color-blue);
           // --metrics-color2: var(--ls-highlight-color-green);
           // --metrics-color3: var(--ls-highlight-color-yellow);
@@ -254,6 +264,8 @@ class Visualization {
         return null
     }
 
+    release() {}
+
     async render() {
         throw new Error("Should be implemented in child class")
     }
@@ -278,7 +290,10 @@ class CardVisualization extends Visualization {
         const value = calcFunc(metrics)
 
         return `
-            <div class="metrics-card w-48 flex flex-col text-center border">
+            <div class="metrics-card w-48 flex flex-col text-center border"
+                 data-uuid="${this.uuid}"
+                 data-on-click="editBlock"
+                >
                 <div class="w-full text-lg p-2">${label}</div>
                 <div class="w-full text-4xl"><span>${value}</span></div>
             </div>
@@ -311,19 +326,34 @@ class CardVisualization extends Visualization {
 
 class ChartVisualization extends Visualization {
     needRepaintOnChangingColors = true
-    chart = null
+
+    constructor(uuid, slot, metric, childMetric, type) {
+        super(uuid, slot, metric, childMetric, type)
+
+        this.chart = null
+    }
+
+    release() {
+        if (!this.chart)
+            return
+
+        this.chart.destroy()
+        this.chart = null
+    }
 
     async render() {
         return `
-            <div class="metrics-chart flex flex-col border">
+            <div class="metrics-chart flex flex-col border"
+                 data-uuid="${this.uuid}"
+                 data-on-click="editBlock"
+                >
                 <canvas id="chart_${this.slot}"></canvas>
             </div>
         `.trim()
     }
 
     async postRender() {
-        if (this.chart)
-            this.chart.destroy()
+        this.release()
 
         if(this.type === 'bar')
             this.chart = await this.bar()
@@ -444,16 +474,15 @@ class ChartVisualization extends Visualization {
         if(datasets.length > 1)
             chartOptions.plugins.legend.display = true
 
-        return new Chart(
-            top.document.getElementById(`chart_${this.slot}`),
-            {
-                type: 'line',
-                data: {
-                    datasets: datasets
-                },
-                options: chartOptions
-            }
-        )
+        const params = {
+            type: 'line',
+            data: {
+                datasets: datasets
+            },
+            options: chartOptions
+        }
+
+        return this._createChart(params)
     }
 
     async bar() {
@@ -476,20 +505,27 @@ class ChartVisualization extends Visualization {
             values.push(value)
         })
 
-        return new Chart(
-            top.document.getElementById(`chart_${this.slot}`),
-            {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: this.getChartColors()
-                    }]
-                },
-                options: chartOptions
-            }
-        )
+        const params = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: this.getChartColors()
+                }]
+            },
+            options: chartOptions
+        }
+
+        return this._createChart(params)
+    }
+
+    _createChart(params) {
+        const canvas = top.document.getElementById(`chart_${this.slot}`)
+        if(!canvas)
+            return
+
+        return new Chart(canvas, params)
     }
 }
 
@@ -553,10 +589,9 @@ class AddMetricUI {
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
 
-                hooks.forEach(async (hook) => {
-                    if(hook.metric === _this.metricNameInput.value)
-                        await refreshBlock(hook.uuid)
-                })
+                for (const { uuid, viz } of Object.entries(hooks))
+                    if(viz.metric === _this.metricNameInput.value)
+                        await refreshBlock(uuid)
                 
             }
             else 

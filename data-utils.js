@@ -1,5 +1,11 @@
 import '@logseq/libs'
-import { getDateForPage, getDateForPageWithoutBrackets, getDayInText, getScheduledDeadlineDateDay, getScheduledDeadlineDateDayTime } from 'logseq-dateutils';
+import {
+    getDateForPage,
+    getDateForPageWithoutBrackets,
+    getDayInText,
+    getScheduledDeadlineDateDay,
+    getScheduledDeadlineDateDayTime,
+} from 'logseq-dateutils';
 import {logseq as packageInfo} from './package.json'
 
 

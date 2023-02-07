@@ -8,7 +8,7 @@
         "dev": "parcel ./index.html --public-url ./",
         "clean": "rm -rf ./dist/*",
         "build-css": "tailwindcss -i ./index.css -o ./output.css",
-        "build": "npm run clean && npm run build-css && parcel build --public-url . --no-source-maps --no-optimize index.html",
+        "build": "npm run clean && npm run build-css && parcel build --public-url . --no-optimize index.html",
         "prod":  "npm run clean && npm run build-css && parcel build --public-url . --no-source-maps index.html"
     },
     "devDependencies": {
