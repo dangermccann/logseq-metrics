@@ -287,7 +287,7 @@ class CardVisualization extends Visualization {
         }[this.type]
 
         const label = `${title} ${this.metric}${this.childMetric ? " / " + this.childMetric : ""}`
-        const value = calcFunc(metrics)
+        const value = calcFunc.bind(this)(metrics)
 
         return `
             <div class="metrics-card w-48 flex flex-col text-center border"
@@ -295,7 +295,7 @@ class CardVisualization extends Visualization {
                  data-on-click="editBlock"
                 >
                 <div class="w-full text-lg p-2">${label}</div>
-                <div class="w-full text-4xl"><span>${value}</span></div>
+                <div class="w-full text-4xl"><span>${value ? value : "—"}</span></div>
             </div>
         `.trim()
     }
@@ -319,7 +319,7 @@ class CardVisualization extends Visualization {
     latest(metrics) {
         if(metrics.length === 0) return null
 
-        return dataUtils.sortMetricsByDate(metrics).slice(-1).value
+        return dataUtils.sortMetricsByDate(metrics).slice(-1)[0].value
     }
 }
 
