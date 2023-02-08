@@ -6,7 +6,6 @@ import { defaultSettings, mergeDeep } from './settings'
 
 
 var dataUtils
-var hooks = {}
 console = logger
 
 
@@ -113,29 +112,24 @@ async function main() {
     logseq.App.onMacroRendererSlotted(async ({ slot, payload }) => {
         const uuid = payload.uuid
         const [type, metric, childMetric, visualization] = payload.arguments
-        if(type !== ":metrics") return
 
-        const slotEl = top.document.getElementById(slot)
-        if(slotEl) {
-            slotEl.style.width = "100%"
+        if(type !== ":metrics")
+            return
 
-            const viz = Object.values(hooks).find(o => {return o.slot == slot})
-            if (viz) {
-                await viz.postRender()
-                return
-            }
+        let viz = Visualization.getInstanceFor(uuid, slot)
+        if(viz) {
+            await viz.postRender()
+            return
         }
 
-        const viz = Visualization.selectType(uuid, slot, metric, childMetric, visualization)
+        viz = Visualization.create(uuid, slot, metric, childMetric, visualization)
         if(!viz) {
             console.log(`Unknown visualization: ${visualization}`)
             return
         }
 
-        console.debug(`onMacroRendererSlotted slot: ${slot} | type: ${visualization}`)
+        console.debug(`visualize ${visualization} @${slot}`)
 
-        // TODO: figure out if we need this 'key' to be durable, as in, set to something unique that is encoded in
-        // the {{renderer ...}} block.  The 'slot' value will change each time its rendered.  
         const html = await viz.render()
         logseq.provideUI({
             key: `metrics-${slot}`,
@@ -145,15 +139,12 @@ async function main() {
             style: { flex: 1}
         })
         await viz.postRender()
-
-        if(uuid in hooks)
-            hooks[uuid].release()
-        hooks[uuid] = viz
     })
 
     const changeColorsHook = async (data) => {
-        for (const viz of Object.values(hooks))
-            await viz.postRender()
+        for (const blockInstances of Object.values(Visualization.instances))
+            for (const viz of Object.values(blockInstances))
+                await viz.postRender()
 
         if(data.mode === "dark")
             document.body.classList.add("dark")
@@ -165,7 +156,7 @@ async function main() {
     logseq.App.onThemeModeChanged(changeColorsHook)
 
     logseq.App.onRouteChanged((path, template) => {
-        hooks = {}
+        Visualization.releaseAll()
     })
 
     logseq.provideStyle(`
@@ -233,7 +224,57 @@ function splitBy(text, delimeters=' |:') {
 
 
 class Visualization {
-    needRepaintOnChangingColors = false
+    static instances = {}
+
+    static releaseAll() {
+        for (const blockInstances of Object.values(Visualization.instances))
+            for (const viz of Object.values(blockInstances))
+                viz.release()
+        Visualization.instances = {}
+    }
+
+    static create(uuid, slot, name, childName, visualization) {
+        let instance = Visualization.getInstanceFor(uuid, slot)
+        if(instance)
+            return instance
+
+        name = name.trim()
+        childName = childName.trim()
+        childName = childName === '-' ? '' : childName 
+        visualization = visualization.trim()
+
+        const types = [
+            [CardVisualization, ['sum', 'average', 'latest']],
+            [ChartVisualization, [
+                'line', 'cumulative-line', 'bar',
+                'properties-line', 'properties-cumulative-line',
+            ]]
+        ]
+        for (const [ cls, allowed ] of types) {
+            if(allowed.includes(visualization)) {
+                instance = new cls(uuid, slot, name, childName, visualization)
+                Visualization.setInstanceFor(uuid, slot, instance)
+                return instance
+            }
+        }
+
+        return null
+    }
+
+    static getInstanceFor(uuid, slot) {
+        const blockInstances = Visualization.instances[uuid]
+        if(!blockInstances)
+            return null
+        return blockInstances[slot] || null
+    }
+
+    static setInstanceFor(uuid, slot, instance) {
+        Visualization.instances[uuid] = Visualization.instances[uuid] || {}
+        const old = Visualization.instances[uuid][slot]
+        if(old)
+            old.release()
+        Visualization.instances[uuid][slot] = instance
+    }
 
     constructor(uuid, slot, metric, childMetric, type) {
         if (this.constructor === Visualization)
@@ -244,24 +285,6 @@ class Visualization {
         this.metric = metric
         this.childMetric = childMetric
         this.type = type
-    }
-
-    static selectType(uuid, slot, name, childName, visualization) {
-        name = name.trim()
-        childName = childName.trim()
-        childName = childName === '-' ? '' : childName 
-        visualization = visualization.trim()
-
-        const allowedCardVisualizations = ['sum', 'average', 'latest']
-        const allowedChartVisualizations = ['line', 'cumulative-line', 'bar', 'properties-line', 'properties-cumulative-line']
-
-        if(allowedCardVisualizations.includes(visualization))
-            return new CardVisualization(uuid, slot, name, childName, visualization)
-
-        if(allowedChartVisualizations.includes(visualization))
-            return new ChartVisualization(uuid, slot, name, childName, visualization)
-
-        return null
     }
 
     release() {}
@@ -325,8 +348,6 @@ class CardVisualization extends Visualization {
 
 
 class ChartVisualization extends Visualization {
-    needRepaintOnChangingColors = true
-
     constructor(uuid, slot, metric, childMetric, type) {
         super(uuid, slot, metric, childMetric, type)
 
@@ -334,7 +355,7 @@ class ChartVisualization extends Visualization {
     }
 
     release() {
-        if (!this.chart)
+        if(!this.chart)
             return
 
         this.chart.destroy()
@@ -353,7 +374,14 @@ class ChartVisualization extends Visualization {
     }
 
     async postRender() {
+        const slotContainer = top.document.getElementById(this.slot)
+        if(!slotContainer){
+            console.debug(`Slot doesn't exist: ${this.slot}`)
+            return null
+        }
         this.release()
+
+        slotContainer.style.width = "100%"
 
         if(this.type === 'bar')
             this.chart = await this.bar()
@@ -521,9 +549,12 @@ class ChartVisualization extends Visualization {
     }
 
     _createChart(params) {
-        const canvas = top.document.getElementById(`chart_${this.slot}`)
-        if(!canvas)
-            return
+        const id = `chart_${this.slot}`
+        const canvas = top.document.getElementById(id)
+        if(!canvas) {
+            console.debug(`Canvas doesn't exist: ${id}`)
+            return null
+        }
 
         return new Chart(canvas, params)
     }
@@ -589,10 +620,10 @@ class AddMetricUI {
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
 
-                for (const { uuid, viz } of Object.entries(hooks))
-                    if(viz.metric === _this.metricNameInput.value)
-                        await refreshBlock(uuid)
-                
+                for (const blockInstances of Object.values(Visualization.instances))
+                    for(const viz of Object.values(blockInstances))
+                        if(viz.metric === _this.metricNameInput.value)
+                            await refreshBlock(viz.uuid)
             }
             else 
                 console.log("Validation failed")
