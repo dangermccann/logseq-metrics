@@ -154,7 +154,7 @@ export class DataUtils {
         return block?.uuid
     }
 
-    prepareMetricsForLineChart(metrics, mode) {
+    prepareMetricsForLineChart(metrics, cumulativeMode) {
         metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics));
 
         let data = [];
@@ -165,7 +165,7 @@ export class DataUtils {
                 let y = parseFloat(metric.value)
                 sum += y
                 date = new Date(metric.date)
-                value = { x: date, y: (mode === 'cumulative') ? sum : y }
+                value = { x: date, y: cumulativeMode ? sum : y }
             } catch { 
                 console.debug(`Invalid meric.  date: ${metric.date}, value: ${metric.value}`)
             }
@@ -175,7 +175,7 @@ export class DataUtils {
         return data;
     }
 
-    async loadLineChart(metricName, mode) {
+    async loadLineChart(metricName, cumulativeMode) {
         // Scenarios:
         // 1. Single dataset using data from immediate children
         // 2. Multiple datasets where data comes from grandchildren 
@@ -194,12 +194,12 @@ export class DataUtils {
                 var child = childNames[i];
                 let childName = child.label;
                 let metrics = await this.loadMetrics(metricName, childName)
-                datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode), label: childName } )
+                datasets.push( { data: this.prepareMetricsForLineChart(metrics, cumulativeMode), label: childName } )
             }
         }
         else {
             let metrics = await this.loadMetrics(metricName)
-            datasets.push( { data: this.prepareMetricsForLineChart(metrics, mode) } )
+            datasets.push( { data: this.prepareMetricsForLineChart(metrics, cumulativeMode) } )
         }
 
         return datasets;
@@ -284,6 +284,8 @@ export class DataUtils {
             })
         }
 
+        console.debug(`Loaded ${metrics.length} metrics`)
+
         return metrics
     }
 
@@ -359,7 +361,7 @@ export class DataUtils {
         return names
     }
 
-    async propertiesQueryLineChart(properties, mode) {
+    async propertiesQueryLineChart(properties, cumulativeMode) {
         return Promise.all(properties.map(async (prop) => {
             let results = await this.logseq.DB.datascriptQuery(`
             [:find (pull ?b [*])
@@ -390,7 +392,7 @@ export class DataUtils {
 
             return {
                 label: prop,
-                data: this.prepareMetricsForLineChart(metrics, mode),
+                data: this.prepareMetricsForLineChart(metrics, cumulativeMode),
             }
         }))
     }
