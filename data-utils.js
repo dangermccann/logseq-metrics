@@ -5,7 +5,7 @@ import {
     getDayInText,
     getScheduledDeadlineDateDay,
     getScheduledDeadlineDateDayTime,
-} from 'logseq-dateutils';
+} from 'logseq-dateutils'
 import {logseq as packageInfo} from './package.json'
 
 
@@ -34,7 +34,7 @@ export class Metric {
 
 export class DataUtils {
     constructor(_logseq) {
-        this.logseq = _logseq;
+        this.logseq = _logseq
     }
 
     async findBlock(tree, name) {
@@ -74,7 +74,7 @@ export class DataUtils {
 
         console.debug(`Loaded tree with ${tree.length} blocks`)
 
-        var blockId;
+        var blockId
         if(tree.length == 0) {
             console.debug(`Page is empty.  Inserting block ${name}`)
             blockId = (await this.logseq.Editor.appendBlockInPage(DATA_PAGE, name))?.uuid
@@ -116,7 +116,7 @@ export class DataUtils {
         else {
             console.log(`Metric inserted successfully: ${entry}`)
             
-            let formattedName = name;
+            let formattedName = name
             if(childName)
                 formattedName += " / " + childName
             
@@ -155,12 +155,12 @@ export class DataUtils {
     }
 
     prepareMetricsForLineChart(metrics, cumulativeMode) {
-        metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics));
+        metrics = this.sortMetricsByDate(this.filterInvalidMetrics(metrics))
 
-        let data = [];
-        let sum = 0;
+        let data = []
+        let sum = 0
         metrics.forEach(metric => {
-            var date, value;
+            var date, value
             try {
                 let y = parseFloat(metric.value)
                 sum += y
@@ -172,7 +172,7 @@ export class DataUtils {
             
             data.push(value)
         })
-        return data;
+        return data
     }
 
     async loadLineChart(metricName, cumulativeMode) {
@@ -187,22 +187,23 @@ export class DataUtils {
         // Return value: 
         // datasets: [ { data: [ { x: (date), y: (float) } }, { ... } ] } ]
 
-        let datasets = []
-        let childNames = await this.loadMetricNames(metricName)
+        const datasets = []
+        const childNames = await this.loadMetricNames(metricName)
         if(childNames.length > 0) {
-            for(var i = 0; i < childNames.length; i++) {
-                var child = childNames[i];
-                let childName = child.label;
-                let metrics = await this.loadMetrics(metricName, childName)
-                datasets.push( { data: this.prepareMetricsForLineChart(metrics, cumulativeMode), label: childName } )
+            for(const { label } of childNames) {
+                const metrics = await this.loadMetrics(metricName, label)
+                datasets.push({
+                    data: this.prepareMetricsForLineChart(metrics, cumulativeMode),
+                    label: label,
+                })
             }
         }
         else {
-            let metrics = await this.loadMetrics(metricName)
+            const metrics = await this.loadMetrics(metricName)
             datasets.push( { data: this.prepareMetricsForLineChart(metrics, cumulativeMode) } )
         }
 
-        return datasets;
+        return datasets
     }
 
     // Remove any metrics that have non-numeric values or invalid dates
@@ -210,24 +211,24 @@ export class DataUtils {
         var filtered = []
         metrics.forEach(metric => {
             if(isNaN(parseFloat(metric.value)))
-                return;
+                return
             if(isNaN(new Date(metric.date).valueOf()))
-                return;
+                return
             filtered.push(metric)
         })
-        return filtered;
+        return filtered
     }
 
     // Chart.js requires data points to be sorted along the y-axis
     sortMetricsByDate(metrics) {
         var sorted = metrics.sort((a, b) => {
-            return new Date(a.date) - new Date(b.date);
+            return new Date(a.date) - new Date(b.date)
         })
-        return sorted;
+        return sorted
     }
 
     parseMetric(content) {
-        let parsed = null;
+        let parsed = null
         try {
             parsed = JSON.parse(content)
             if(parsed.value && parsed.date)
@@ -235,14 +236,14 @@ export class DataUtils {
 
         }
         finally {
-            return parsed;
+            return parsed
         }
     }
 
     async loadMetrics(metricName, childName) {
         const DATA_PAGE = this.logseq.settings.data_page_name
 
-        var block;
+        var block
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
         let blockId = await this.findBlock(tree, metricName)
         
@@ -257,8 +258,8 @@ export class DataUtils {
 
         block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
 
-        let metrics = [];
-        var metric;
+        let metrics = []
+        var metric
         if(childName && childName.length > 0) {
             block?.children?.forEach( (child) => {
                 metric = this.parseMetric(child.content)
@@ -291,21 +292,21 @@ export class DataUtils {
 
     async loadChildMetrics(metricName) {
         console.log(`Loading child metrics for ${metricName}`)
-        var metrics = {};
+        var metrics = {}
     
         const DATA_PAGE = this.logseq.settings.data_page_name
         const tree = await this.logseq.Editor.getPageBlocksTree(DATA_PAGE)
     
-        console.debug(`Loaded tree: ${JSON.stringify(tree)}`);
+        console.debug(`Loaded tree: ${JSON.stringify(tree)}`)
     
         let blockId = await this.findBlock(tree, metricName)
         
-        if(!blockId) return metrics;
+        if(!blockId) return metrics
     
         var block = await this.logseq.Editor.getBlock(blockId, { includeChildren: true })
     
         block?.children?.forEach( (child) => {
-            let parsed = this.parseMetric(child.content);
+            let parsed = this.parseMetric(child.content)
             if(parsed) { 
                 // Only include child metrics
             }
@@ -319,7 +320,7 @@ export class DataUtils {
             }
         })
     
-        return metrics;
+        return metrics
     }
 
     // Returns list of top-level metric names if `parent` is null.  
@@ -363,28 +364,27 @@ export class DataUtils {
 
     async propertiesQueryLineChart(properties, cumulativeMode) {
         return Promise.all(properties.map(async (prop) => {
-            let results = await this.logseq.DB.datascriptQuery(`
-            [:find (pull ?b [*])
-              :where
-              [?b :block/page ?p]
-              [?p :block/journal? true]
-              [?b :block/properties ?prop]
-              [(get ?prop :${prop})]
-            ]`)        
+            const results = await this.logseq.DB.datascriptQuery(`
+                [:find (pull ?b [*])
+                  :where
+                  [?b :block/page ?p]
+                  [?p :block/journal? true]
+                  [?b :block/properties ?prop]
+                  [(get ?prop :${prop})]
+                ]
+            `)
 
-            if(!results) return { data: [] }
+            if(!results)
+                return { data: [] }
 
-            let metrics = []
-
-            for(var i = 0; i < results.length; i++) {
-                let result = results[i];
-                let value = parseFloat(result[0].properties[prop])
+            const metrics = []
+            for(const [ result ] of results) {
+                const value = parseFloat(result.properties[prop])
                 if(!isNaN(value)) {
-                    let pageId = result[0].page.id
-                    let page = await this.logseq.Editor.getPage(pageId)
+                    const page = await this.logseq.Editor.getPage(result.page.id)
                     if(page) {
-                        let day = page.journalDay.toString()
-                        let date = new Date(day.slice(0, 4) + '-' + day.slice(4, 6) + '-' + day.slice(6) + ' 00:00:00')
+                        const day = page.journalDay.toString()
+                        const date = new Date(day.slice(0, 4) + "-" + day.slice(4, 6) + "-" + day.slice(6) + " 00:00:00")
                         metrics.push(new Metric({ date: date, value: value }))
                     }
                 }
@@ -397,29 +397,69 @@ export class DataUtils {
         }))
     }
 
-    async addToJournal(name, child, metric) {
-        // See if the page exists
-        let config = await logseq.App.getUserConfigs()
-        let pageName = getDateForPageWithoutBrackets(new Date(metric.date), config.preferredDateFormat)
+    async addToJournal(name, child, metricObj) {
+        const config = await logseq.App.getUserConfigs()
+        const pageName = getDateForPageWithoutBrackets(new Date(metricObj.date), config.preferredDateFormat)
 
         let page = await logseq.Editor.getPage(pageName)
-        if(!page) {
+        if(!page) {  // See if the page exists
             console.log(`Creating page ${pageName}`)
             page = await logseq.Editor.createPage(pageName, {}, { createFirstBlock: true, journal: true, redirect: false })
         }
 
         let fullName = name
-        if(child) 
-            fullName += '/' + child
+        let property = this.clearPropertyName(name)
+        if(child) {
+            fullName += " / " + child
 
-        fullName = fullName.replaceAll(' ', '-')
+            // it seems like now @logseq/libs v0.0.14 have a bug: we cannot add property in the form "test/sub"
+            // so as a temporal solution used "test___sub": it can be renamed manually in Logseq
+            property += "___" + this.clearPropertyName(child)
+        }
 
-        let text = this.logseq.settings.journal_title.replaceAll('${metric}', fullName)
-        let block = await logseq.Editor.appendBlockInPage(page.uuid, text, {
-            properties: {
-                [fullName]: metric.value
+        const text = this.logseq.settings.journal_title.replaceAll("${metric}", fullName)
+
+        return await logseq.Editor.appendBlockInPage(
+            page.uuid,
+            text,
+            {
+                properties: {
+                    [property]: metricObj.value
+                }
             }
-        })
-        
+        )
+    }
+
+    clearName(name) {
+        // Idea: restric metric names with the same rules as Logseq restricts property names
+        // Property names restrictions from Logseq itself:
+
+        /**
+         * Property name begins with a non-numeric character and can contain alphanumeric characters
+         * and . * + ! - _ ? $ % & = < >.
+         * If -, + or . are the first character, the second character (if any) must be non-numeric.
+         */
+
+        // But this message is wrong for Logseq v0.8.16:
+        //   - ' is also allowed in property names
+        //   - property name can begins with numeric character
+        //   - property name can continues with numeric character after -, + or .
+        //   - property name can contain non-keyboard characters like ≈, §, ⌘, smiles, etc.
+
+        // So the real rule is:
+        //     Property name cannot contain keyboard characters :;,^@#()/\{}[]|"`~ and space
+
+        // Here, for metric (non-property) name we can restrict all these characters
+        // Except of space: because it is very usefull for naming
+        // But spaces should be cleaned in conversion to property
+
+        const restrictedChars = /[:;,^@#~"`/|\(){}[\]]/g
+
+        return name.replaceAll(restrictedChars, "")
+    }
+
+    clearPropertyName(name) {
+        return this.clearName(name).replaceAll(" ", "-").toLowerCase()
     }
 }
+

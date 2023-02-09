@@ -6,6 +6,17 @@ var dataUtils
 console = logger
 
 
+async function refreshBlock(uuid) {
+    const block = await logseq.Editor.getBlock(uuid)
+    if(!block || !block.content)
+        return
+
+    await logseq.Editor.updateBlock(uuid, "")
+    await logseq.Editor.updateBlock(uuid, block.content)
+    console.debug(`Refreshed block: ${uuid}`)
+}
+
+
 export class AddMetricUI {
     root;
     metricNameInput;
@@ -58,23 +69,29 @@ export class AddMetricUI {
 
         document.getElementById("create-metrics-enter-button")?.addEventListener("click", async function (e) {
             if(_this.validate()) {
+                const name = _this.metricNameInput.value
+                const childName = _this.childMetricInput.value
+                const metricObj = _this.formatMetric()
+
                 // add to metrics data page
-                await dataUtils.enterMetric(_this.metricNameInput.value, _this.childMetricInput.value, 
-                    _this.formatMetric())
+                await dataUtils.enterMetric(name, childName, JSON.stringify(metricObj))
 
                 // add to journal if checked
                 if(document.getElementById("journal-check").checked) {
-                    console.log("Will add to journal")
-                    await dataUtils.addToJournal(_this.metricNameInput.value, _this.childMetricInput.value, 
-                        JSON.parse(_this.formatMetric()))
+                    await dataUtils.addToJournal(name, childName, metricObj)
+                    console.log("Added to journal")
                 }
 
                 logseq.hideMainUI({ restoreEditingCursor: true })
 
-                for (const blockInstances of Object.values(this.visualizationInstances))
+                const blocksToRefresh = []
+                for(const blockInstances of Object.values(_this.visualizationInstances))
                     for(const viz of Object.values(blockInstances))
                         if(viz.metric === _this.metricNameInput.value)
-                            await refreshBlock(viz.uuid)
+                            if(!blocksToRefresh.includes(viz.uuid))
+                                blocksToRefresh.push(viz.uuid)
+                for(const uuid of blocksToRefresh)
+                    await refreshBlock(uuid)
             }
             else 
                 console.log("Validation failed")
@@ -136,7 +153,7 @@ export class AddMetricUI {
     formatMetric() {
         const date = new Date(`${this.dateInput.value} ${this.timeInput.value}`)
         const val = { date: date, value: this.valueInput.value }
-        return JSON.stringify(val)
+        return val
     }
 
     clear() {
@@ -157,6 +174,12 @@ export class AddMetricUI {
 
     validate() {
         let returnVal = true
+
+        // IMPORTANT: before v0.15 there are no restrictions on metric and child metric names
+        // So some users may have inapropriate characters in names
+        // Clearing usage is necessary for any metrics-tree operations
+        this.metricNameInput.value = dataUtils.clearName(this.metricNameInput.value)
+        this.childMetricInput.value = dataUtils.clearName(this.childMetricInput.value)
 
         if(!this.validateInputNotEmpty(this.metricNameInput))
             returnVal = false

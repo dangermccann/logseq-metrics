@@ -3,11 +3,13 @@ import Chart from 'chart.js/auto'
 import 'chartjs-adapter-date-fns'
 import { AddMetricUI, AddVizualizationUI } from './ui.js'
 import { DataUtils, logger } from './data-utils'
-import { defaultSettings, mergeDeep } from './settings'
+import { mergeDeep, settingsDescription } from './settings'
 
 
 var dataUtils
 console = logger
+
+logseq.useSettingsSchema(settingsDescription)
 
 
 async function isDarkMode() {
@@ -18,17 +20,6 @@ async function isDarkMode() {
 function cssVars(names) {
     const style = getComputedStyle(top.document.documentElement)
     return names.map((name) => {return style.getPropertyValue(name)})
-}
-
-
-async function refreshBlock(uuid) {
-    const block = await logseq.Editor.getBlock(uuid)
-    if(!block || !block.content)
-        return
-
-    await logseq.Editor.updateBlock(uuid, "")
-    await logseq.Editor.updateBlock(uuid, block.content)
-    console.debug(`Refreshed block: ${uuid}`)
 }
 
 
@@ -46,9 +37,6 @@ async function main() {
     if(await isDarkMode())
         document.body.classList.add("dark")
 
-    // load settings, merge with defaults and save back so they can be modified by user
-    logseq.updateSettings(mergeDeep({...defaultSettings}, logseq.settings))
-
     const addMetricUI = new AddMetricUI(Visualization.instances)
     addMetricUI.setUpUIHandlers()
 
@@ -56,7 +44,7 @@ async function main() {
     addVizualizationUI.setUpUIHandlers()
 
     logseq.Editor.registerSlashCommand("Metrics → Add", async () => {
-        await logseq.Editor.insertAtEditingCursor("CHANGED: Use command palette to add new metric: ⌘+⇧+P or Ctrl+Shift+P")
+        await logseq.Editor.insertAtEditingCursor("CHANGED (since v0.13): Use command palette to add new metric: ⌘+⇧+P or Ctrl+Shift+P")
     })
 
     logseq.App.registerCommandPalette({
@@ -427,7 +415,7 @@ class _ChartVisualization extends Visualization {
                 padding: 10
             },
             scales: {
-                xAxis: {
+                x: {
                     grid: {
                         tickColor: borderColor,
                         color: borderColor,
@@ -443,7 +431,7 @@ class _ChartVisualization extends Visualization {
                     },
                     time: {}
                 },
-                y1: {
+                y: {
                     type: "linear",
                     position: "left",
                     grid: {
@@ -451,7 +439,7 @@ class _ChartVisualization extends Visualization {
                         color: borderColor,
                         borderColor: borderColor,
                         drawBorder: true,
-                        drawTicks: true,
+                        drawTicks: false,
                         display: true
                     },
                     ticks: {
@@ -549,7 +537,7 @@ class _LineChartVisualization extends _ChartVisualization {
                 }
             },
             scales: {
-                xAxis: {
+                x: {
                     type: "time",
                     time: {
                         unit: "day"
@@ -612,7 +600,7 @@ class PropertiesLineChartVisualization extends _LineChartVisualization {
 
         const options = {
             scales: {
-                xAxis: {
+                x: {
                     time: {
                         tooltipFormat: config.preferredDateFormat
                     }
@@ -647,12 +635,13 @@ class PropertiesLineChartVisualization extends _LineChartVisualization {
         })
 
         if(properties.some(needAltAxis)) {
+            options.scales.y.grid.drawTicks = true
             options.scales.y2 = {}
-            mergeDeep(options.scales.y2, options.scales.y1)
+            mergeDeep(options.scales.y2, options.scales.y)
             options.scales.y2.position = "right"
         }
         if(properties.every(needAltAxis))
-            delete options.scales.y1
+            delete options.scales.y
 
         return datasets
     }
