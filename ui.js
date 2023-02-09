@@ -311,15 +311,15 @@ export class AddVizualizationUI {
             _this.autoComplete.classList.add("hidden")
         }, true)
 
-        this.metricNameInput.addEventListener("focus", function(e) { 
+        this.metricNameInput.addEventListener("focus", function(e) {
             _this.prepareAutoComplete(null)
         })
 
-        this.metricNameInput.addEventListener("blur", function(e) { 
+        this.metricNameInput.addEventListener("blur", function(e) {
             _this.autoComplete.classList.add("hidden") 
         })
 
-        this.metricNameInput.addEventListener("keyup", function(e) { 
+        this.metricNameInput.addEventListener("keyup", function(e) {
             AutoComplete.doAutoComplete(e, _this.autoComplete, _this.autoCompleteData)
         })
 
