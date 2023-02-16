@@ -26,6 +26,7 @@ A card displays a single value calcualted from the Data Points for a single Metr
 - Latest Value – Displays the most recent Data Point
 - Total Value – Dispalys the sum of all Data Points 
 - Average – Displays the average value of all Data Points
+- Count – Displays the count of all Data Points
 
 ![Card](./images/card.png)
 
@@ -66,6 +67,8 @@ Use the **Metrics → Properties Chart** slash-command and enter the property na
 ![PropertiesChart](./images/properties-chart.png)
 
 Also several properties could be displayed on the same chart. Use a colon ":", a pipe "|" or a space " " to separate their names (! but NOT a comma ","): `{{renderer :metrics, weight | kcal, -, properties-line}}`.
+
+If you need to display two completly different properties on the same chart: add a second y-axis by specifying asterisk `*` at the end of property name: `{{renderer :metrics, :weight :kcal*, -, properties-line}}`.
 
 
 ## Data Storage
