@@ -10,7 +10,8 @@ The plugin also supports Child Metrics to allow logically similar Metrics to be 
 
 ## Usage 
 
-The plugin uses three commands: 
+There are two ways to provide the data that this plugin needs to display graphs. One is the built-in "Metrics Add" command, which captures and writes your data into the metrics-plugin-data page. The other way is to simply store your own data as Journal properties and visualize the data using a [Properties Chart](#properties-charts). Simply add weight:: 20 to the first bullet of any Journal page, and this plugin can find and plot those values.
+
 - **Metrics → Add** – Runs via `Command Palette` (⌘⇧P or Ctrl+Shift+P). Displays an interface to store a single Data Point for a Metric (and optionally a Child Metric) that you specify.  
 - **Metrics → Visualize** – `Slash-command` (type "/" while editing a block). Displays an interface to insert a [Card](#card), [Bar Chart](#bar-chart) or [Line Chart](#line-chart) visualization into the current block on the current page.  
 - **Metrics → Properties Chart** – `Slash-command` (type "/" while editing a block). Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
