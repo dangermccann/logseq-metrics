@@ -176,7 +176,7 @@ export class AddMetricUI {
         let returnVal = true
 
         // IMPORTANT: before v0.15 there are no restrictions on metric and child metric names
-        // So some users may have inapropriate characters in names
+        // So some users may have inappropriate characters in names
         // Clearing usage is necessary for any metrics-tree operations
         this.metricNameInput.value = dataUtils.clearName(this.metricNameInput.value)
         this.childMetricInput.value = dataUtils.clearName(this.childMetricInput.value)
