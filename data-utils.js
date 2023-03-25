@@ -362,7 +362,7 @@ export class DataUtils {
         return names
     }
 
-    async propertiesQueryLineChart(properties, cumulativeMode) {
+    async propertiesQueryLineChart(properties, cumulativeMode, start, end) {
         return Promise.all(properties.map(async (prop) => {
             const results = await this.logseq.DB.datascriptQuery(`
                 [:find (pull ?b [*])
@@ -370,7 +370,10 @@ export class DataUtils {
                   [?b :block/page ?p]
                   [?p :block/journal? true]
                   [?b :block/properties ?prop]
+                  [?p :block/journal-day ?day]
                   [(get ?prop :${prop})]
+                  [(>= ?day ${start})]
+                  [(<= ?day ${end})]
                 ]
             `)
 

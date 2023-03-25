@@ -100,6 +100,8 @@ async function main() {
         const uuid = payload.uuid
         const [type, metric, childMetric, visualization] = payload.arguments
 
+        const otherArgs = payload.arguments.slice(4)
+
         if(type !== ":metrics")
             return
 
@@ -109,7 +111,7 @@ async function main() {
             return
         }
 
-        viz = Visualization.create(uuid, slot, metric, childMetric, visualization)
+        viz = Visualization.create(uuid, slot, metric, childMetric, visualization, otherArgs)
         if(!viz) {
             console.log(`Unknown visualization: ${visualization}`)
             return
@@ -223,7 +225,7 @@ class Visualization {
         }
     }
 
-    static create(uuid, slot, name, childName, visualization) {
+    static create(uuid, slot, name, childName, visualization, args) {
         let instance = Visualization.getInstanceFor(uuid, slot)
         if(instance)
             return instance
@@ -242,7 +244,7 @@ class Visualization {
 
         for (const [ cls, allowed ] of types) {
             if(allowed.includes(visualization)) {
-                instance = new cls(uuid, slot, name, childName, visualization)
+                instance = new cls(uuid, slot, name, childName, visualization, args)
                 Visualization.setInstanceFor(uuid, slot, instance)
                 return instance
             }
@@ -266,7 +268,7 @@ class Visualization {
         Visualization.instances[uuid][slot] = instance
     }
 
-    constructor(uuid, slot, metric, childMetric, type) {
+    constructor(uuid, slot, metric, childMetric, type, args) {
         if (this.constructor === Visualization)
             throw new Error("Abstract class")
 
@@ -275,6 +277,7 @@ class Visualization {
         this.metric = metric
         this.childMetric = childMetric
         this.type = type
+        this.args = args
     }
 
     release() {}
@@ -347,8 +350,8 @@ class CardVisualization extends Visualization {
 class _ChartVisualization extends Visualization {
     chartType = null
 
-    constructor(uuid, slot, metric, childMetric, type) {
-        super(uuid, slot, metric, childMetric, type)
+    constructor(uuid, slot, metric, childMetric, type, args) {
+        super(uuid, slot, metric, childMetric, type, args)
 
         if (this.constructor === _ChartVisualization)
             throw new Error("Abstract class")
@@ -621,10 +624,15 @@ class PropertiesLineChartVisualization extends _LineChartVisualization {
         const properties = splitBy(this.metric)
         const cumulativeMode = this.type.includes("cumulative-")
         const needAltAxis = p => p.endsWith(this.altAxisSuffix)
+        let start = this.args.length > 0 ? this.args[0] : '0000-01-01';
+        let end   = this.args.length > 1 ? this.args[1] : '9999-12-31';
+
+        start = start.split('-').join('')
+        end = end.split('-').join('')
 
         const datasets = await dataUtils.propertiesQueryLineChart(
             properties.map(p => p.replace(new RegExp("\\" + this.altAxisSuffix + "$"), "")),
-            cumulativeMode,
+            cumulativeMode, start, end
         )
 
         datasets.forEach((dataset, idx) => {

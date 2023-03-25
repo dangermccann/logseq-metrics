@@ -58,7 +58,6 @@ The `metric` and `child metric` arguments refer to the Metric and Child Metric w
 - `line` – Line Chart displaying a Metric's or Child Metric's value over time
 - `cumulative-line` – Line Chart displaying the aggegate value of a Metric or Child Metrics over time
 
-
 ## Properties Charts
 A Properties Chart visualizes how [Logseq properties](https://discuss.logseq.com/t/lesson-5-how-to-power-your-workflows-using-properties-and-dynamic-variables/10173#what-are-logseq-properties-1) in your journal change over time.  To use this chart type first enter some numberic properties on your journal pages.  In the example below, there are entries for the `weight::` property on three journal pages.
 
@@ -71,6 +70,7 @@ Also several properties could be displayed on the same chart. Use a colon ":", a
 
 If you need to display two completly different properties on the same chart: add a second y-axis by specifying asterisk `*` at the end of property name: `{{renderer :metrics, :weight :kcal*, -, properties-line}}`.
 
+The date range for the properties chart can be customized by providing the start and end dates to the renderer as arguments in the format `YYYY-MM-DD`. For example, to limit the date range to March 1, 2023 through March 31, 2023, add the dates as arguments passed to the renderer like this: `{{renderer :metrics, weight, -, properties-line, 2023-03-01, 2023-03-31}}` 
 
 ## Data Storage
 Data for the metrics and data points is stored in the `metrics-plugin-data` page (could be changed in plugin settings).  Each Metric, Child Metric and Data Point is stored on individual blocks on this page.  For example, storage of a Metric called *Movies Watched* with Child Metrics for *Comedy*, *Drama* and *Horror* movies is stored as follows: 
