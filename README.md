@@ -31,6 +31,12 @@ A card displays a single value calcualted from the Data Points for a single Metr
 
 ![Card](./images/card.png)
 
+### Properties Card
+Properties Card visualizations are just like the vanilla Card visualizations except that they pull data from block properties on journal pages instead of from the `metrics-plugin-data` page that gets populated using **Metrics → Add** from the Command Palette.  The syntax for using Properties Cards is similar to the vanilla Card syntax although the visualiation name contains the `properties-` prefix.  For example, to display cards containing data from the `exercise-minutes::` block property, use the following syntax:
+- `{{renderer :metrics, exercise-minutes, -, properties-latest}}` 
+- `{{renderer :metrics, exercise-minutes, -, properties-sum}}` 
+- `{{renderer :metrics, exercise-minutes, -, properties-average}}` 
+
 
 ### Bar Chart 
 The bar chart is for comparing the total values of Child Metrics.  For example, a bar chart could be used to compare the number of exercise minutes of each type: running, cycling, cardio and stregnth training.  

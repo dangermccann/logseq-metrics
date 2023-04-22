@@ -1,6 +1,6 @@
 {
     "name": "logseq-metrics",
-    "version": "0.16",
+    "version": "0.17",
     "description": "Track and visaulize your personal habits, goals and business results in Logseq.",
     "author": "John McCann",
     "license": "MIT",

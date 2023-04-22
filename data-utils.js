@@ -362,42 +362,54 @@ export class DataUtils {
         return names
     }
 
-    async propertiesQueryLineChart(properties, cumulativeMode, start, end) {
+    async propertiesQuery(properties, start, end) {
         return Promise.all(properties.map(async (prop) => {
-            const results = await this.logseq.DB.datascriptQuery(`
-                [:find (pull ?b [*])
-                  :where
-                  [?b :block/page ?p]
-                  [?p :block/journal? true]
-                  [?b :block/properties ?prop]
-                  [?p :block/journal-day ?day]
-                  [(get ?prop :${prop})]
-                  [(>= ?day ${start})]
-                  [(<= ?day ${end})]
-                ]
-            `)
+            try {
+                const results = await this.logseq.DB.datascriptQuery(`
+                    [:find (pull ?b [*])
+                    :where
+                    [?b :block/page ?p]
+                    [?p :block/journal? true]
+                    [?b :block/properties ?prop]
+                    [?p :block/journal-day ?day]
+                    [(get ?prop :${prop})]
+                    [(>= ?day ${start})]
+                    [(<= ?day ${end})]
+                    ]
+                `)
 
-            if(!results)
-                return { data: [] }
+                if(!results)
+                    return { data: [] }
 
-            const metrics = []
-            for(const [ result ] of results) {
-                const value = parseFloat(result.properties[prop])
-                if(!isNaN(value)) {
-                    const page = await this.logseq.Editor.getPage(result.page.id)
-                    if(page) {
-                        const day = page.journalDay.toString()
-                        const date = new Date(day.slice(0, 4) + "-" + day.slice(4, 6) + "-" + day.slice(6) + " 00:00:00")
-                        metrics.push(new Metric({ date: date, value: value }))
+                const metrics = []
+                for(const [ result ] of results) {
+                    const value = parseFloat(result.properties[prop])
+                    if(!isNaN(value)) {
+                        const page = await this.logseq.Editor.getPage(result.page.id)
+                        if(page) {
+                            const day = page.journalDay.toString()
+                            const date = new Date(day.slice(0, 4) + "-" + day.slice(4, 6) + "-" + day.slice(6) + " 00:00:00")
+                            metrics.push(new Metric({ date: date, value: value }))
+                        }
                     }
                 }
+                return metrics
             }
-
-            return {
-                label: prop,
-                data: this.prepareMetricsForLineChart(metrics, cumulativeMode),
+            catch(e) {
+                console.log(e)
+                return []
             }
         }))
+    }
+
+    async propertiesQueryLineChart(properties, cumulativeMode, start, end) {
+        let metrics = await this.propertiesQuery(properties, start, end)
+        return properties.map( (prop, idx) => {
+            return {
+                label: prop,
+                data: this.prepareMetricsForLineChart(metrics[idx], cumulativeMode)
+            }
+        })
     }
 
     async addToJournal(name, child, metricObj) {

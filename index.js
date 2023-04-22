@@ -237,7 +237,9 @@ class Visualization {
 
         const types = [
             [CardVisualization, ["sum", "average", "latest", "count"]],
+            [PropertiesCardVisualization, ["properties-sum", "properties-average", "properties-latest", "properties-count"]],
             [BarChartVisualization, ["bar"]],
+            [PropertiesBarChartVisualization, ["properties-bar"]],
             [MetricsLineChartVisualization, ["line", "cumulative-line"]],
             [PropertiesLineChartVisualization, ["properties-line", "properties-cumulative-line"]],
         ]
@@ -289,22 +291,27 @@ class Visualization {
     async postRender() {}
 }
 
+class _CardVisualization extends Visualization {
+    async loadData() {
+        throw new Error("Should be implemented in child class")
+    }
 
-class CardVisualization extends Visualization {
+    getTitle() {
+        throw new Error("Should be implemented in child class")
+    }
+
     async render() {
-        const metrics = await dataUtils.loadMetrics(this.metric, this.childMetric)
+        const metrics = await this.loadData()
 
+        const shortType = this.type.indexOf("-") > -1 ? this.type.split('-')[1] : this.type
         const [ title, calcFunc ] = {
             sum: ["Total", this.sum],
             average: ["Average", this.average],
             latest: ["Latest", this.latest],
             count: ["Count", this.count],
-        }[this.type]
+        }[shortType]
 
-        let name = this.metric
-        if(this.childMetric)
-            name += " / " + this.childMetric
-        name = name.replaceAll("-", " ").replaceAll(" ", "&nbsp;")
+        let name = this.getTitle()
 
         const value = calcFunc.bind(this)(metrics)
 
@@ -346,6 +353,37 @@ class CardVisualization extends Visualization {
     }
 }
 
+
+class PropertiesCardVisualization extends _CardVisualization {
+    async loadData() {
+        let start = this.args.length > 0 ? this.args[0] : '0000-01-01';
+        let end   = this.args.length > 1 ? this.args[1] : '9999-12-31';
+
+        start = start.split('-').join('')
+        end = end.split('-').join('')
+
+        const metricsList = await dataUtils.propertiesQuery([splitBy(this.metric)], start, end)
+        return metricsList[0]
+    }
+
+    getTitle() {
+        return this.childMetric
+    }
+}
+
+class CardVisualization extends _CardVisualization {
+    async loadData() {
+        return dataUtils.loadMetrics(this.metric, this.childMetric)
+    }
+
+    getTitle() {
+        let name = this.metric
+        if(this.childMetric)
+            name += " / " + this.childMetric
+        name = name.replaceAll("-", " ").replaceAll(" ", "&nbsp;")
+        return name
+    }
+}
 
 class _ChartVisualization extends Visualization {
     chartType = null
@@ -497,11 +535,15 @@ class _ChartVisualization extends Visualization {
 }
 
 
-class BarChartVisualization extends _ChartVisualization {
+class _BarChartVisualization extends _ChartVisualization {
     chartType = "bar"
 
+    async loadData(options) {
+        throw new Error("Should be implemented in child class")
+    }
+
     async getData(options) {
-        var metrics = await dataUtils.loadChildMetrics(this.metric)
+        var metrics = await this.loadData(options)
         var labels = []
         var values = []
 
@@ -528,6 +570,21 @@ class BarChartVisualization extends _ChartVisualization {
     }
 }
 
+class BarChartVisualization extends _BarChartVisualization { 
+    chartType = "bar"
+
+    async loadData(options) {
+        return await dataUtils.loadChildMetrics(this.metric)
+    }
+}
+
+class PropertiesBarChartVisualization extends _BarChartVisualization { 
+    chartType = "properties-bar"
+
+    async loadData(options) {
+        throw new Error("Not implemented yet")
+    }
+}
 
 class _LineChartVisualization extends _ChartVisualization {
     chartType = "line"
