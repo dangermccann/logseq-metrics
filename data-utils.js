@@ -41,7 +41,7 @@ export class DataUtils {
         let found = null
 
         tree.forEach(async function (value) {
-            if(value.content === name) {
+            if(value.content && value.content.split('\n')[0] === name) {
                 found = value.uuid
                 return
             }
