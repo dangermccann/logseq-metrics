@@ -1,6 +1,6 @@
 {
     "name": "logseq-metrics",
-    "version": "0.18",
+    "version": "0.19",
     "description": "Track and visaulize your personal habits, goals and business results in Logseq.",
     "author": "John McCann",
     "license": "MIT",
@@ -9,17 +9,17 @@
         "clean": "rm -rf ./dist/*",
         "build-css": "tailwindcss -i ./index.css -o ./output.css",
         "build": "npm run clean && npm run build-css && parcel build --public-url . --no-optimize index.html",
-        "prod": "npm run clean && npm run build-css && parcel build --public-url . --no-source-maps index.html"
+        "prod": "npm run clean && npm run build-css && parcel build --no-scope-hoist --public-url . index.html"
     },
     "devDependencies": {
-        "parcel": "^2.8.3",
+        "parcel": "^2.9.3",
         "tailwindcss": "^3.2.6"
     },
     "dependencies": {
-        "@logseq/libs": "^0.0.14",
-        "chart.js": "^4.2.0",
+        "@logseq/libs": "latest",
+        "chart.js": "^4.3.3",
         "chartjs-adapter-date-fns": "^3.0.0",
-        "date-fns": "^2.29.3",
+        "date-fns": "^2.30.0",
         "logseq-dateutils": "latest"
     },
     "logseq": {
