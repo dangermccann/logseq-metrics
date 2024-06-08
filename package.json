@@ -6,7 +6,9 @@
     "license": "MIT",
     "scripts": {
         "dev": "parcel ./index.html --public-url ./",
-        "clean": "rm -rf ./dist/*",
+        "clean": "npm run clean:lin && npm run clean:win",
+        "clean:win": "node -e \"if (process.platform === 'win32') process.exit(1)\" || , if exist dist rmdir /Q /S dist",
+        "clean:lin": "node -e \"if (process.platform !== 'win32') process.exit(1)\" || rm -rf ./dist/* && echo linux",
         "build-css": "tailwindcss -i ./index.css -o ./output.css",
         "build": "npm run clean && npm run build-css && parcel build --public-url . --no-optimize index.html",
         "prod": "npm run clean && npm run build-css && parcel build --no-scope-hoist --public-url . index.html"
