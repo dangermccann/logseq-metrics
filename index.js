@@ -191,7 +191,7 @@ async function main() {
         .metrics-chart {
             width: 100%;
             height: ${logseq.settings.chart_height}px;
-            margin: 0;
+            margin: 0 0 1em 0;
             border-color: var(--metrics-border-color);
             background-color: var(--metrics-bg-color1);
         }
@@ -412,9 +412,10 @@ class _ChartVisualization extends Visualization {
                  data-on-click="editBlock"
                 >
                 <canvas id="chart_${this.slot}"></canvas>
+                <button id="chart_${this.slot}_download">Download Chart Data as CSV</button>
             </div>
         `.trim()
-    }
+    } 
 
     async postRender() {
         const slotContainer = top.document.getElementById(this.slot)
@@ -427,6 +428,15 @@ class _ChartVisualization extends Visualization {
         slotContainer.style.width = "100%"
 
         this.chart = await this.getChart()
+
+        // callback for CSV download
+        top.document.getElementById(`chart_${this.slot}_download`).addEventListener("click", () => {
+            console.log("Export to CSV triggered.")
+            this.downloadCSV({
+                filename: "chart-data.csv",
+            })
+        });
+
         return this.chart
     }
 
@@ -532,6 +542,63 @@ class _ChartVisualization extends Visualization {
 
         return new Chart(canvas, params)
     }
+
+    // https://stackoverflow.com/a/75212386
+    _convertChartDataToCSV(args) {
+        let result, columnDelimiter, lineDelimiter, data, label;
+
+        label = args.data.label;
+
+        data = args.data.data || null;
+        if (data == null || !data.length) {
+            console.error("No data")
+            return null;
+        }
+
+        columnDelimiter = args.columnDelimiter || ',';
+        lineDelimiter = args.lineDelimiter || '\n';
+
+        // header
+        result = 'Date/Time' + columnDelimiter + label + columnDelimiter + lineDelimiter;
+
+        // data
+        for (let i = 0; i < data.length; i++) {
+            let date = new Date(data[i].x).toISOString().replace("T", " ").replace("Z", "");
+            result += date + columnDelimiter + data[i].y + columnDelimiter + lineDelimiter;
+        }
+
+        return result;
+    }
+
+    // https://stackoverflow.com/a/75212386
+    downloadCSV(args) {
+        var data, filename, link;
+        var csv = "";
+
+        var chart = this.chart;
+
+        for (var i = 0; i < chart.data.datasets.length; i++) {
+            csv += this._convertChartDataToCSV({
+                data: chart.data.datasets[i],
+            });
+        }
+
+        if (csv === null) return;
+
+        filename = args.filename || 'chart-data.csv';
+        if (!csv.match(/^data:text\/csv/i)) {
+            csv = 'data:text/csv;charset=utf-8,' + csv;
+        }
+
+        // not sure if anything below this comment works
+        data = encodeURI(csv);
+        link = document.createElement('a');
+        link.setAttribute('href', data);
+        link.setAttribute('download', filename);
+        document.body.appendChild(link); // Required for FF
+        link.click();
+        document.body.removeChild(link);
+    } 
 }
 
 
