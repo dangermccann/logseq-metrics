@@ -476,5 +476,33 @@ export class DataUtils {
     clearPropertyName(name) {
         return this.clearName(name).replaceAll(" ", "-").toLowerCase()
     }
+
+    interpretUserDate(value) {
+        var date = new Date();
+        if(value.toLowerCase() == "today") {
+            date = new Date();
+        }
+        else if(value.toLowerCase() == "yesterday") {
+            date.setDate(date.getDate() - 1)
+        }
+        else if(value.endsWith("d") && value.startsWith("-")) {
+            var days = parseInt(value.slice(1, -1));
+            if(isNaN(days))
+                days = 0;
+
+            let d = new Date();
+            date.setDate(date.getDate() - days)
+        }
+        else {
+            return value;
+        }
+
+        return date.getFullYear() + "-" + this.pad(date.getMonth()+1) + "-" + this.pad(date.getDate());
+    }
+
+    pad(d) {
+        return (d < 10) ? '0' + d.toString() : d.toString();
+    }
+
 }
 

@@ -359,6 +359,9 @@ class PropertiesCardVisualization extends _CardVisualization {
         let start = this.args.length > 0 ? this.args[0] : '0000-01-01';
         let end   = this.args.length > 1 ? this.args[1] : '9999-12-31';
 
+        start = dataUtils.interpretUserDate(start)
+        end = dataUtils.interpretUserDate(end)
+
         start = start.split('-').join('')
         end = end.split('-').join('')
 
@@ -750,6 +753,9 @@ class PropertiesLineChartVisualization extends _LineChartVisualization {
         const needAltAxis = p => p.endsWith(this.altAxisSuffix)
         let start = this.args.length > 0 ? this.args[0] : '0000-01-01';
         let end   = this.args.length > 1 ? this.args[1] : '9999-12-31';
+
+        start = dataUtils.interpretUserDate(start)
+        end = dataUtils.interpretUserDate(end)
 
         start = start.split('-').join('')
         end = end.split('-').join('')
