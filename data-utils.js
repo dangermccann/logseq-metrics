@@ -412,6 +412,61 @@ export class DataUtils {
         })
     }
 
+    async propertiesQueryBarChart(properties, bucketSizeDays, start, end) {
+        let metrics = await this.propertiesQuery(properties, start, end)
+        if(metrics.length == 0)
+            return []
+
+        // flatten into single array
+        let single = []
+        metrics.forEach(propArray => {
+            propArray.forEach(val => {
+                single.push(val)
+            })
+        })
+
+        single.sort((a, b) => {
+            return a.date - b.date
+        })
+
+        let startTime = single[0].date.getTime()
+        let endTime = single[single.length - 1].date
+        let bucketSizeMillis = bucketSizeDays * 24 * 60 * 60 * 1000
+        let buckets = {}
+
+        // create the buckets
+        let numBuckets = Math.ceil((endTime - startTime) / bucketSizeMillis)
+        for(var i = 0; i < numBuckets; i++) {
+            buckets[i.toString()] = []
+        }
+
+        // populate the buckets
+        single.forEach((metric, idx) => {
+            let bucket = Math.floor((metric.date.getTime() - startTime) / bucketSizeMillis)
+            buckets[bucket.toString()].push(metric)
+        })
+
+        // calculate sum and average
+        var results = { }
+        for (let key in buckets) {
+            let bucket = buckets[key]
+            let bucketStart = parseInt(key) * bucketSizeMillis + startTime
+            let sum = 0;
+            let average = 0;
+            for(var i = 0; i < bucket.length; i++) {
+                sum += bucket[i].value
+            }
+            average = sum / bucket.length
+            results[key] = { 
+                sum: sum, 
+                average: average,
+                bucketTime: bucketStart
+            } 
+        }
+
+        return results
+    }
+
     async addToJournal(name, child, metricObj) {
         const config = await logseq.App.getUserConfigs()
         const pageName = getDateForPageWithoutBrackets(new Date(metricObj.date), config.preferredDateFormat)
@@ -478,6 +533,7 @@ export class DataUtils {
     }
 
     interpretUserDate(value) {
+        value = value.trim()
         var date = new Date();
         if(value.toLowerCase() == "today") {
             date = new Date();

@@ -649,10 +649,40 @@ class BarChartVisualization extends _BarChartVisualization {
 }
 
 class PropertiesBarChartVisualization extends _BarChartVisualization { 
-    chartType = "properties-bar"
+    chartType = "bar"
 
     async loadData(options) {
-        throw new Error("Not implemented yet")
+        const properties = splitBy(this.metric)
+        let mode = this.args.length > 0 ? this.args[0] : "sum"
+        let bucketSize = this.args.length > 1 ? this.args[1] : 1
+        let start = this.args.length > 2 ? this.args[2] : '0000-01-01';
+        let end   = this.args.length > 3 ? this.args[3] : '9999-12-31';
+
+        start = dataUtils.interpretUserDate(start)
+        end = dataUtils.interpretUserDate(end)
+
+        start = start.split('-').join('')
+        end = end.split('-').join('')
+
+        const datasets = await dataUtils.propertiesQueryBarChart(
+            properties, bucketSize, start, end
+        )
+
+        console.log(datasets)
+        
+        var results = {}
+
+        Object.keys(datasets).forEach((key) => {
+            let values = []
+            if(mode == "average")
+                values.push({ value: datasets[key].average })
+            else 
+                values.push({ value: datasets[key].sum })
+
+            results[(new Date(datasets[key].bucketTime).toLocaleDateString())] = values
+        })
+
+        return results
     }
 }
 
