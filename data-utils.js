@@ -412,57 +412,86 @@ export class DataUtils {
         })
     }
 
+    backToSunday(date) {
+        let dayOfWeek = date.getDay();
+        let result = new Date(date)
+        result.setDate(result.getDate() - dayOfWeek);
+        return result
+    }
+
+    backToFirstOfMonth(date) {
+
+    }
+
     async propertiesQueryBarChart(properties, bucketSizeDays, start, end) {
-        let metrics = await this.propertiesQuery(properties, start, end)
-        if(metrics.length == 0)
+        let datasets = await this.propertiesQuery(properties, start, end)
+        if(datasets.length == 0)
             return []
 
         // flatten into single array
         let single = []
-        metrics.forEach(propArray => {
+        datasets.forEach(propArray => {
             propArray.forEach(val => {
                 single.push(val)
             })
         })
+
+        if(single.length == 0)
+            return []
 
         single.sort((a, b) => {
             return a.date - b.date
         })
 
         let startTime = single[0].date.getTime()
-        let endTime = single[single.length - 1].date
-        let bucketSizeMillis = bucketSizeDays * 24 * 60 * 60 * 1000
-        let buckets = {}
+        let endTime = single[single.length - 1].date.getTime()
 
-        // create the buckets
-        let numBuckets = Math.ceil((endTime - startTime) / bucketSizeMillis)
-        for(var i = 0; i < numBuckets; i++) {
-            buckets[i.toString()] = []
+        let bucketSizeMillis = 24 * 60 * 60 * 1000
+        if(bucketSizeDays == "week") {
+            bucketSizeMillis *= 7
+            startTime = this.backToSunday(single[0].date).getTime()
+        }
+        else if(bucketSizeDays == "month") {
+        }
+        else {
+            bucketSizeMillis *= parseInt(bucketSizeDays)
         }
 
-        // populate the buckets
-        single.forEach((metric, idx) => {
-            let bucket = Math.floor((metric.date.getTime() - startTime) / bucketSizeMillis)
-            buckets[bucket.toString()].push(metric)
-        })
+        var results = []
+        datasets.forEach(dataset =>  {
+            let buckets = {}
 
-        // calculate sum and average
-        var results = { }
-        for (let key in buckets) {
-            let bucket = buckets[key]
-            let bucketStart = parseInt(key) * bucketSizeMillis + startTime
-            let sum = 0;
-            let average = 0;
-            for(var i = 0; i < bucket.length; i++) {
-                sum += bucket[i].value
+            // create the buckets
+            let numBuckets = Math.floor((endTime - startTime) / bucketSizeMillis) + 1
+            for(var i = 0; i < numBuckets; i++) {
+                buckets[i.toString()] = []
             }
-            average = sum / bucket.length
-            results[key] = { 
-                sum: sum, 
-                average: average,
-                bucketTime: bucketStart
-            } 
-        }
+
+            // populate the buckets
+            dataset.forEach((metric, idx) => {
+                let bucket = Math.floor((metric.date.getTime() - startTime) / bucketSizeMillis)
+                buckets[bucket.toString()].push(metric)
+            })
+
+            // calculate sum and average
+            var metrics = { }
+            for (let key in buckets) {
+                let bucket = buckets[key]
+                let bucketStart = parseInt(key) * bucketSizeMillis + startTime
+                let sum = 0;
+                let average = 0;
+                for(var i = 0; i < bucket.length; i++) {
+                    sum += bucket[i].value
+                }
+                average = bucket.length > 0 ? sum / bucket.length : 0
+                metrics[key] = { 
+                    sum: sum, 
+                    average: average,
+                    bucketTime: bucketStart
+                } 
+            }
+            results.push(metrics)
+        })
 
         return results
     }

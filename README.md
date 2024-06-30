@@ -7,6 +7,8 @@ The plugin provides an interface for storing Metrics and Data Points inside your
 
 The plugin also supports Child Metrics to allow logically similar Metrics to be organized and visualized together.  For example, a Metric for measuring exercise minutes can have Child Metrics for sub-categories of exercise such as running, cycling, cardio and stregnth training.  
 
+## New 
+As of verion 0.22 properties bar chars are now supported.   [Read more](#properties-bar-chart).
 
 ## Usage 
 
@@ -14,8 +16,8 @@ There are two ways to provide the data that this plugin needs to display graphs.
 
 - **Metrics → Add** – Runs via `Command Palette` (⌘⇧P or Ctrl+Shift+P). Displays an interface to store a single Data Point for a Metric (and optionally a Child Metric) that you specify.  
 - **Metrics → Visualize** – `Slash-command` (type "/" while editing a block). Displays an interface to insert a [Card](#card), [Bar Chart](#bar-chart) or [Line Chart](#line-chart) visualization into the current block on the current page.  
-- **Metrics → Properties Chart** – `Slash-command` (type "/" while editing a block). Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
-
+- **Metrics → Properties Line Chart** – `Slash-command` (type "/" while editing a block). Inserts a line chart that is populated from querying property values in your journal.  [more...](#properties-charts)
+- **Metrics → Properties Bar Chart** – `Slash-command` (type "/" while editing a block). Inserts a bar chart that is populated from querying property values in your journal.  [more...](#properties-charts)
 
 ## Visualization Types
 
@@ -67,7 +69,12 @@ The `metric` and `child metric` arguments refer to the Metric and Child Metric w
 ## Properties Charts
 A Properties Chart visualizes how [Logseq properties](https://discuss.logseq.com/t/lesson-5-how-to-power-your-workflows-using-properties-and-dynamic-variables/10173#what-are-logseq-properties-1) in your journal change over time.  To use this chart type first enter some numberic properties on your journal pages.  In the example below, there are entries for the `weight::` property on three journal pages.
 
-Use the **Metrics → Properties Chart** slash-command and enter the property name (`weight`) into the first argument of the renderer:
+Both line charts and bar charts are supported.  Line charts use node properties from your journal pages to visualize time series data.  Bar charts enable grouping data into buckets of multiple days or a week to show the total or average values over each bucket.  The following visualizations are supported: 
+- `properties-line` – Displays time series data in a line chart. 
+- `properties-cumulative-line` – Displays time series data in a cumulative fashion in a line chart.
+- `properties-bar` – Displays data in configurable time buckets in a bar chart. 
+
+Example: use the **Metrics → Properties Line Chart** slash-command and enter the property name (`weight`) into the first argument of the renderer:
 `{{renderer :metrics, weight, -, properties-line}}`. Or `{{renderer :metrics, weight, -, properties-cumulative-line}}` to aggegate property values over time.  The result looks like:
 
 ![PropertiesChart](./images/properties-chart.png)
@@ -77,6 +84,15 @@ Also several properties could be displayed on the same chart. Use a colon ":", a
 If you need to display two completly different properties on the same chart: add a second y-axis by specifying asterisk `*` at the end of property name: `{{renderer :metrics, :weight :kcal*, -, properties-line}}`.
 
 The date range for the properties chart can be customized by providing the start and end dates to the renderer as arguments in the format `YYYY-MM-DD`. For example, to limit the date range to March 1, 2023 through March 31, 2023, add the dates as arguments passed to the renderer like this: `{{renderer :metrics, weight, -, properties-line, 2023-03-01, 2023-03-31}}`.  You may also pass in a value that specifies a number of days in the form `-Xd`.  For example, passing `-12d` will be interepred as "twelve days ago".  Finally, you can pass in values of `today` and `yesterday` and they will be interpred appropriately.    
+
+### Properties Bar Chart 
+The syntax for the properties bar chart is: `{{renderer :metrics, [property], [title], properties-bar, [sum], [bucket size], [start date], [end date]}}`.  The arguments are:
+- `property` – The name of the property or properties to display.  Multiple properties can be combined with a `|`.
+- `title` – The title to display at the top of the chart, or `-` to show no title. 
+- `sum` – Either `sum` or `average` to show either the sum or average of the values in the bucket
+- `bucket size` – _(optional, default = 1)_ – The size of each bucket/grouping in days, or specify `week` to bucket by weeks starting on Sundays.  Bucketing by month is not yet supported – if you want this feature open an issue on Github and I'll implement it. 
+- `start date` – _(optional, defaults all the earliest available data)_ – The start date of the data for the chart in `YYYY-MM-DD`, or relative days `-Xd`
+- `end date` – _(optional, defaults to today's date)_ – The end date of the data for the chart in `YYYY-MM-DD`, or relative days `-Xd`
 
 ## Data Storage
 Data for the metrics and data points is stored in the `metrics-plugin-data` page (could be changed in plugin settings).  Each Metric, Child Metric and Data Point is stored on individual blocks on this page.  For example, storage of a Metric called *Movies Watched* with Child Metrics for *Comedy*, *Drama* and *Horror* movies is stored as follows: 

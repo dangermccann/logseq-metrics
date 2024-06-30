@@ -10,7 +10,7 @@ export const settingsDescription = [
     key: "add_to_journal",
     type: "boolean",
     title: 'Checkbox state in add metric UI',
-    description: 'Wether "Also add entry to Journal" checked or not by default',
+    description: 'Whether "Also add entry to Journal" is checked or not by default',
     default: true,
   },
   {
@@ -26,6 +26,13 @@ export const settingsDescription = [
     title: "Plugin stores all metrics data in special page with this name",
     description: "⚠️ If you change this settings and you already have entered some metrics data, you need to move it to new page manually!",
     default: "metrics-plugin-data",
+  },
+  {
+    key: "show_csv_download",
+    type: "boolean",
+    title: 'Show CSV download link',
+    description: 'Whether to show a link below charts to Download Chart Data as CSV',
+    default: true,
   },
 ]
 

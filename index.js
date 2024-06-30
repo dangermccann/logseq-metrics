@@ -76,8 +76,21 @@ async function main() {
         }, 200)
     })
 
-    logseq.Editor.registerSlashCommand("Metrics → Properties Chart", async () => { 
+    logseq.Editor.registerSlashCommand("Metrics → Properties Line Chart", async () => { 
         const content = '{{renderer :metrics, :property1 :property2, TITLE (use "-" to leave empty), properties-line}}'
+
+        const block = await logseq.Editor.getCurrentBlock()
+        if(block) {
+            await logseq.Editor.updateBlock(block.uuid, content)
+            await logseq.Editor.exitEditingMode()
+            setTimeout(() => {
+                logseq.Editor.editBlock(block.uuid, { pos: 21 })
+            }, 50)
+        }
+    })
+
+    logseq.Editor.registerSlashCommand("Metrics → Properties Bar Chart", async () => { 
+        const content = '{{renderer :metrics, :property1 :property2, TITLE (use "-" to leave empty), properties-bar, sum}}'
 
         const block = await logseq.Editor.getCurrentBlock()
         if(block) {
@@ -409,13 +422,17 @@ class _ChartVisualization extends Visualization {
     }
 
     async render() {
+        let showDownload = logseq.settings.show_csv_download
+        if(this.chartType == "bar")
+            showDownload = false
+
         return `
             <div class="metrics-chart flex flex-col border"
                  data-uuid="${this.uuid}"
                  data-on-click="editBlock"
                 >
                 <canvas id="chart_${this.slot}"></canvas>
-                <button id="chart_${this.slot}_download">Download Chart Data as CSV</button>
+                <button id="chart_${this.slot}_download" style="display: ${showDownload ? 'block' : 'none'}">Download Chart Data as CSV</button>
             </div>
         `.trim()
     } 
@@ -651,6 +668,29 @@ class BarChartVisualization extends _BarChartVisualization {
 class PropertiesBarChartVisualization extends _BarChartVisualization { 
     chartType = "bar"
 
+    async getChartOptions() {
+        const config = await logseq.App.getUserConfigs()
+        const title = this.childMetric
+
+        const options = {
+            scales: {
+                x: {
+                    time: {
+                        tooltipFormat: config.preferredDateFormat
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: !!title,
+                    text: title
+                }
+            }
+        }
+
+        return mergeDeep(await super.getChartOptions(), options)
+    }
+
     async loadData(options) {
         const properties = splitBy(this.metric)
         let mode = this.args.length > 0 ? this.args[0] : "sum"
@@ -668,21 +708,42 @@ class PropertiesBarChartVisualization extends _BarChartVisualization {
             properties, bucketSize, start, end
         )
 
-        console.log(datasets)
-        
-        var results = {}
+        var results = []
 
-        Object.keys(datasets).forEach((key) => {
-            let values = []
-            if(mode == "average")
-                values.push({ value: datasets[key].average })
-            else 
-                values.push({ value: datasets[key].sum })
-
-            results[(new Date(datasets[key].bucketTime).toLocaleDateString())] = values
+        datasets.forEach((dataset, idx) =>  {
+            var result =  {}
+            Object.keys(dataset).forEach((key) => {
+                let value = 0
+                if(mode == "average")
+                    value = dataset[key].average
+                else 
+                    value = dataset[key].sum
+    
+                result[(new Date(dataset[key].bucketTime).toLocaleDateString())] = value
+            })
+            results.push({
+                label: properties[idx],
+                data: result
+            })
         })
 
         return results
+    }
+
+    async getData(options) {
+        const datasets = await this.loadData(options)
+
+        const colors = this.getChartColors()
+        datasets.forEach((dataset, idx) => {
+            dataset.backgroundColor = dataset.borderColor = colors[idx % colors.length]
+        })
+
+        if(datasets.length > 1)
+            options.plugins.legend.display = true
+
+        return {
+            datasets: datasets
+        }
     }
 }
 
